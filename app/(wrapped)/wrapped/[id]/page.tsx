@@ -9,7 +9,7 @@
 // Includes the final custom Share Screen with high-quality SVG card export.
 // ---------------------------------------------------------------------------
 
-import React, { use, useState, useEffect, useRef } from "react";
+import React, { use, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { getWrappedStoryDeck } from "@/app/actions/wrapped";
@@ -36,6 +36,7 @@ import {
 import { Fade, FadeUp, Scale, BlurReveal, Counter } from "@/components/motion";
 import { Github, Star, Award, Code as CodeIcon, BookOpen, Share2, RefreshCw } from "@/components/icons";
 import type { Commit } from "@/domain/models";
+import { getNumericSizeClass, getRepoNameSizeClass } from "@/lib/numeric-scale";
 
 // Duration of each slide in milliseconds (default: 6 seconds)
 const SLIDE_DURATION = 6000;
@@ -58,6 +59,9 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
   const requestRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const pausedTimeRef = useRef<number>(0);
+  // Live ref that always holds the current progress value — used by togglePause
+  // to read the correct position even inside stale closures.
+  const progressRef = useRef<number>(0);
 
   // Initialize and compute the story pipeline
   useEffect(() => {
@@ -125,6 +129,7 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
       const currentProgress = Math.min(100, (elapsed / duration) * 100);
 
       setProgress(currentProgress);
+      progressRef.current = currentProgress; // keep live ref in sync
 
       if (currentProgress < 100) {
         requestRef.current = requestAnimationFrame(animateProgress);
@@ -146,19 +151,38 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     };
   }, [activeIndex, isPaused, loading, error, storyDeck]);
 
-  // Handle Play/Pause toggling
-  const togglePause = () => {
+  // ---------------------------------------------------------------------------
+  // togglePause — stable via useCallback, reads from live refs not closures
+  // ---------------------------------------------------------------------------
+  const togglePause = useCallback(() => {
     setIsPaused((prev) => {
       if (!prev) {
-        // Pausing: save current progress
-        pausedTimeRef.current = progress;
+        // Pausing: save current live progress from ref (not stale closure)
+        pausedTimeRef.current = progressRef.current;
       } else {
-        // Resuming: clear start timer so it recalculates from current progress
+        // Resuming: reset start time so RAF recalculates from saved position
         startTimeRef.current = null;
       }
       return !prev;
     });
-  };
+  }, []); // no deps — reads only refs which are always current
+
+  // ---------------------------------------------------------------------------
+  // handleClose — cancels all timers, resets state, then navigates
+  // ---------------------------------------------------------------------------
+  const handleClose = useCallback(() => {
+    // Cancel active animation frame immediately
+    if (requestRef.current !== null) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+    // Reset timer refs so nothing fires if component lingers
+    startTimeRef.current = null;
+    pausedTimeRef.current = 0;
+    progressRef.current = 0;
+    // Navigate home
+    router.push("/");
+  }, [router]);
 
   // ---------------------------------------------------------------------------
   // Navigation functions
@@ -190,22 +214,39 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     }
   };
 
-  // Keyboard navigation
+  // ---------------------------------------------------------------------------
+  // Keyboard navigation — stable handler via ref to avoid stale closure issues
+  // ---------------------------------------------------------------------------
+  // We store current handlers in a ref so the event listener is attached once
+  // and always calls up-to-date functions.
+  const keyHandlerRef = useRef({
+    togglePause,
+    handleNext,
+    handlePrev,
+    handleClose,
+  });
+  useEffect(() => {
+    keyHandlerRef.current = { togglePause, handleNext, handlePrev, handleClose };
+  });
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         e.preventDefault();
-        togglePause();
+        keyHandlerRef.current.togglePause();
       } else if (e.code === "ArrowRight") {
-        handleNext();
+        keyHandlerRef.current.handleNext();
       } else if (e.code === "ArrowLeft") {
-        handlePrev();
+        keyHandlerRef.current.handlePrev();
+      } else if (e.code === "Escape") {
+        keyHandlerRef.current.handleClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    // Single cleanup — no re-registration on every render
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, storyDeck, progress]);
+  }, []); // empty: listener is registered once, reads current fns via ref
 
   // ---------------------------------------------------------------------------
   // SVG Card Downloader
@@ -307,6 +348,150 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // ---------------------------------------------------------------------------
+  // PNG Card Downloader (1080 × 1920 — Instagram Story / retina quality)
+  // ---------------------------------------------------------------------------
+  // Reuses the same SVG card template. The SVG's viewBox scales losslessly
+  // to any canvas resolution. We target 1080×1920 (9:16) for social sharing.
+  // ---------------------------------------------------------------------------
+  const downloadCardAsPNG = () => {
+    if (!storyDeck) return;
+
+    const username = storyDeck.metadata.username;
+    const year = storyDeck.metadata.year;
+
+    // Reuse same stats lookup as SVG export
+    const summarySlide = storyDeck.slides.find((s: any) => s.type === "Summary");
+    const stats = summarySlide?.metadata?.shareStatistics || {};
+    const topMetrics = summarySlide?.metadata?.topMetrics || [];
+    const commitsCount = topMetrics.find((m: any) => m.name === "Commits")?.value || "0";
+
+    // Target canvas dimensions (9:16 at retina density)
+    const PNG_WIDTH = 1080;
+    const PNG_HEIGHT = 1920;
+
+    // Build the SVG with explicit PNG_WIDTH / PNG_HEIGHT so the browser
+    // renders it at full resolution before drawImage scales it onto the canvas.
+    // The viewBox preserves the design proportions exactly.
+    const svgString = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" width="${PNG_WIDTH}" height="${PNG_HEIGHT}">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#02040a" />
+      <stop offset="50%" stop-color="#0d1117" />
+      <stop offset="100%" stop-color="#02040a" />
+    </linearGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&amp;display=swap');
+      .font-sans { font-family: 'Montserrat', sans-serif; }
+      .text-primary { fill: #8b5cf6; }
+      .text-secondary { fill: #06b6d4; }
+      .text-muted { fill: #8b949e; }
+      .text-light { fill: #f9fafb; }
+      .bold { font-weight: 700; }
+      .black { font-weight: 900; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="1200" fill="url(#bg)" />
+
+  <!-- Glowing accent borders -->
+  <rect x="20" y="20" width="760" height="1160" rx="16" fill="none" stroke="#21262d" stroke-width="2" />
+  <rect x="20" y="20" width="760" height="1160" rx="16" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-opacity="0.1" />
+
+  <!-- Header -->
+  <text x="60" y="100" class="font-sans black text-primary" font-size="16" letter-spacing="4">GITWRAPPED</text>
+  <text x="740" y="100" text-anchor="end" class="font-sans bold text-muted" font-size="16">${year}</text>
+
+  <!-- Developer Card Section -->
+  <text x="60" y="220" class="font-sans black text-light" font-size="48">@${username}</text>
+  <text x="60" y="260" class="font-sans text-muted" font-size="16">Your Year in Code, Beautifully Wrapped</text>
+
+  <!-- Highlight stats -->
+  <g transform="translate(60, 360)">
+    <text x="0" y="0" class="font-sans bold text-muted" font-size="14" letter-spacing="2">CONTRIBUTIONS</text>
+    <text x="0" y="70" class="font-sans black text-primary" font-size="80">${stats.formattedTotalContributions || "0"}</text>
+  </g>
+
+  <!-- Metric grid list -->
+  <g transform="translate(60, 580)">
+    <g transform="translate(0, 0)">
+      <text x="0" y="0" class="font-sans bold text-muted" font-size="12" letter-spacing="2">TOP LANGUAGE</text>
+      <text x="0" y="32" class="font-sans black text-light" font-size="28">${stats.topLanguageName || "Code"}</text>
+    </g>
+    <g transform="translate(360, 0)">
+      <text x="0" y="0" class="font-sans bold text-muted" font-size="12" letter-spacing="2">LONGEST STREAK</text>
+      <text x="0" y="32" class="font-sans black text-light" font-size="28">${stats.longestStreakDays || "0"} Days</text>
+    </g>
+    <g transform="translate(0, 140)">
+      <text x="0" y="0" class="font-sans bold text-muted" font-size="12" letter-spacing="2">RANK PERCENTILE</text>
+      <text x="0" y="32" class="font-sans black text-light" font-size="28">Top ${stats.globalRankPercentage || "1"}%</text>
+    </g>
+    <g transform="translate(360, 140)">
+      <text x="0" y="0" class="font-sans bold text-muted" font-size="12" letter-spacing="2">COMMITS</text>
+      <text x="0" y="32" class="font-sans black text-light" font-size="28">${commitsCount}</text>
+    </g>
+  </g>
+
+  <!-- Dotted border divider -->
+  <line x1="60" y1="880" x2="740" y2="880" stroke="#30363d" stroke-width="2" stroke-dasharray="8 8" />
+
+  <!-- Footnote Brand Branding -->
+  <g transform="translate(60, 960)">
+    <text x="0" y="0" class="font-sans bold text-muted" font-size="14" letter-spacing="2">MADE BY GITWRAPPED.DEV</text>
+    <text x="0" y="35" class="font-sans text-muted" font-size="14">Every project. Every late night. Every milestone. Redeemed.</text>
+  </g>
+</svg>
+`;
+
+    // Step 1: Create a Blob URL for the SVG
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    // Step 2: Draw SVG onto an offscreen Canvas at 1080×1920
+    const canvas = document.createElement("canvas");
+    canvas.width = PNG_WIDTH;
+    canvas.height = PNG_HEIGHT;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      URL.revokeObjectURL(svgUrl);
+      return;
+    }
+
+    const img = new window.Image();
+    img.onload = () => {
+      // Fill background first (handles any transparent edge cases)
+      ctx.fillStyle = "#02040a";
+      ctx.fillRect(0, 0, PNG_WIDTH, PNG_HEIGHT);
+      // Draw the SVG — viewBox handles aspect-correct scaling
+      ctx.drawImage(img, 0, 0, PNG_WIDTH, PNG_HEIGHT);
+      URL.revokeObjectURL(svgUrl);
+
+      // Step 3: Export canvas as PNG and trigger download
+      canvas.toBlob(
+        (pngBlob) => {
+          if (!pngBlob) return;
+          const pngUrl = URL.createObjectURL(pngBlob);
+          const link = document.createElement("a");
+          link.href = pngUrl;
+          link.download = `${username}-gitwrapped-${year}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(pngUrl);
+        },
+        "image/png",
+        1.0 // max quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+      console.error("[GitWrapped] PNG export: failed to load SVG into Image element.");
+    };
+    img.src = svgUrl;
   };
 
   // ---------------------------------------------------------------------------
@@ -469,6 +654,10 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
                         Download Card (SVG)
                       </Button>
 
+                      <Button onClick={downloadCardAsPNG} variant="secondary" className="w-full py-3">
+                        Download Card (PNG)
+                      </Button>
+
                       <Grid cols={2} gap={2}>
                         <Button
                           onClick={() => {
@@ -531,7 +720,7 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
                 subtitle={`${storyDeck.metadata.year} Recap`}
                 isPaused={isPaused}
                 onPauseToggle={togglePause}
-                onClose={() => router.push("/")}
+                onClose={handleClose}
               />
 
               {/* Side Tap Navigation Overlay */}
@@ -545,7 +734,7 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
                   </FadeUp>
 
                   <BlurReveal delay={0.4}>
-                    <Heading className="text-2xl md:text-3xl font-bold tracking-tight leading-snug">
+                    <Heading className="text-2xl md:text-3xl font-bold tracking-tight leading-snug break-words [overflow-wrap:anywhere] [word-break:break-word] hyphens-auto max-w-full">
                       {currentSlide.headline}
                     </Heading>
                   </BlurReveal>
@@ -635,15 +824,21 @@ function renderSlideGraphic(slide: StorySlide) {
         </Scale>
       );
 
-    case "Consistency":
+    case "Consistency": {
+      const streakValue = Number(metadata.longestStreak);
+      const streakSizeClass = getNumericSizeClass(streakValue);
       return (
         <Stack space={2} className="items-center">
-          <div className="text-4xl md:text-5xl font-display font-black text-primary">
-            <Counter value={Number(metadata.longestStreak)} delay={0.5} /> DAYS
+          <div className="flex items-baseline gap-2">
+            <span className={clsx("font-display font-black text-primary tabular-nums leading-none", streakSizeClass)}>
+              <Counter value={streakValue} delay={0.5} />
+            </span>
+            <span className="font-display text-xl font-bold text-primary/70 uppercase tracking-widest">DAYS</span>
           </div>
           <Badge variant="success">Unstoppable Streak</Badge>
         </Stack>
       );
+    }
 
     case "Productivity":
       return (
@@ -678,23 +873,46 @@ function renderSlideGraphic(slide: StorySlide) {
         </Stack>
       );
 
-    case "Repositories":
+    case "Repositories": {
       const favRepo: any = metadata.favoriteRepository;
+      const repoOwner: string = favRepo?.ownerName ?? "";
+      const repoName: string = favRepo?.name ?? "Unknown repository";
+      const fullPath = repoOwner ? `${repoOwner}/${repoName}` : repoName;
+      const repoNameSizeClass = getRepoNameSizeClass(fullPath);
       return (
         <Stack space={2} className="items-center">
-          <div className="p-4 bg-surface border border-border rounded-md w-full max-w-[280px] text-left hover:border-primary/20 transition-all">
-            <Flex justify="between" className="mb-2">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <Flex className="gap-1 text-xs font-semibold text-muted-foreground">
+          <div className="p-4 bg-surface border border-border rounded-md w-full max-w-[280px] text-left hover:border-primary/20 transition-all overflow-hidden">
+            <Flex justify="between" className="mb-3 min-w-0">
+              <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
+              <Flex className="gap-1 text-xs font-semibold text-muted-foreground tabular-nums flex-shrink-0">
                 <Star className="h-3 w-3 text-warning" />
-                {favRepo?.starCount ?? 0}
+                {(favRepo?.starCount ?? 0).toLocaleString()}
               </Flex>
             </Flex>
-            <span className="font-display font-bold text-sm block break-words whitespace-normal leading-tight text-foreground">{favRepo?.name}</span>
-            <span className="font-sans text-[11px] text-muted-foreground block break-words whitespace-normal leading-tight">pushed to main branch</span>
+            {/* Owner shown as muted prefix on its own line */}
+            {repoOwner && (
+              <span
+                className="font-mono text-[10px] text-muted-foreground/70 block leading-none mb-0.5 [overflow-wrap:anywhere] [word-break:break-word]"
+              >
+                {repoOwner}/
+              </span>
+            )}
+            {/* Repo name scales based on character length */}
+            <span
+              className={clsx(
+                "font-display font-bold block [overflow-wrap:anywhere] [word-break:break-word] leading-tight text-foreground",
+                repoNameSizeClass
+              )}
+            >
+              {repoName}
+            </span>
+            <span className="font-sans text-[11px] text-muted-foreground block mt-1 leading-tight">
+              pushed to main branch
+            </span>
           </div>
         </Stack>
       );
+    }
 
     case "Organizations":
       const orgList = (metadata.organizationList as any[]) || [];
