@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  /* System Typography */
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Montserrat", sans-serif;
+
+  /* Theme Color Variables */
+  --color-background: #030712; /* Dark slate background */
+  --color-foreground: #f9fafb; /* Off-white text */
+
+  --color-card: #090e1a;
+  --color-card-foreground: #f9fafb;
+
+  --color-primary: #8b5cf6; /* Cyber Purple */
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #06b6d4; /* Neon Cyan */
+  --color-secondary-foreground: #0f172a;
+
+  --color-accent: #f43f5e; /* Coral Pink */
+  --color-accent-foreground: #ffffff;
+
+  --color-muted: #1f2937;
+  --color-muted-foreground: #9ca3af;
+
+  --color-border: #1f2937;
+  --color-input: #1f2937;
+  --color-ring: #8b5cf6;
+
+  /* Custom Transitions & Keyframes */
+  --animate-shimmer: shimmer 2s infinite linear;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+}
+
+/* Base custom styles */
+@layer base {
+  * {
+    border-color: var(--color-border);
+    outline-color: var(--color-ring);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
