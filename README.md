@@ -16,7 +16,7 @@ GitWrapped is built around one simple idea:
 
 The goal is not to build another GitHub analytics website.
 
-The goal is to create an experience people genuinely enjoy sharing.
+The goal is to create an experience people genuinely enjoy sharing :).
 
 ---
 
