@@ -10,7 +10,6 @@ import { MONTH_NAMES, getQuarter, getYearWeekString } from "@/services/analytics
 
 export function calculateProductivity(
   contributions: ContributionHistory,
-  recapYear: number,
 ): AnalyticsProductivity {
   const days = contributions.calendar.weeks.flatMap((w) => w.days);
 

@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------
 
 import type { AnalyticsEngineInput, AnalyticsResult } from "./analytics.types";
-import { calculateContributions } from "./calculators/contributions";
 import { calculateRepositories } from "./calculators/repositories";
 import { calculateLanguages } from "./calculators/languages";
 import { calculateProductivity } from "./calculators/productivity";
@@ -30,7 +29,6 @@ export function computeAnnualAnalytics(input: AnalyticsEngineInput): AnalyticsRe
   const { user, contributions, repositories, pullRequests, issues, organizations, commits, year } = input;
 
   // Execute independent calculators
-  const contributionsCalc = calculateContributions(contributions);
   const repositoriesCalc = calculateRepositories(repositories, contributions);
   const languagesCalc = calculateLanguages(
     {
@@ -62,9 +60,9 @@ export function computeAnnualAnalytics(input: AnalyticsEngineInput): AnalyticsRe
     repositories,
     year,
   );
-  const productivityCalc = calculateProductivity(contributions, year);
+  const productivityCalc = calculateProductivity(contributions);
   const consistencyCalc = calculateConsistency(contributions);
-  const activityCalc = calculateActivity(commits, pullRequests, issues, contributions);
+  const activityCalc = calculateActivity(commits, pullRequests, issues);
   const achievementsCalc = calculateAchievements(input);
   const timelineCalc = calculateTimeline(contributions, pullRequests, issues);
   const organizationsCalc = calculateOrganizations(organizations);

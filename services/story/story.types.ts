@@ -5,7 +5,6 @@
 // All properties are strictly typed and read-only.
 // ---------------------------------------------------------------------------
 
-import type { AnalyticsResult } from "@/services/analytics/analytics.types";
 
 /**
  * Slide Themes supported by the UI Presentation Layer.

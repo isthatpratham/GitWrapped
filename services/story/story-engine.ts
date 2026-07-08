@@ -10,7 +10,6 @@ import type { AnalyticsResult } from "@/services/analytics";
 import type { Story, StorySlide } from "./story.types";
 import { STORY_REGISTRY } from "./story.registry";
 import { STORY_CONFIG } from "./story.constants";
-import { InvalidStoryDeckError } from "./story.errors";
 
 /**
  * Compiles a structured, narrated Story Deck from the calculated analytics.

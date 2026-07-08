@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { clsx } from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, X, Play, Pause } from "@/components/icons";
 import { Avatar } from "@/components/ui/Avatar";
-import { Caption, Title } from "@/components/ui/Typography";
+import { Caption } from "@/components/ui/Typography";
 
 // ---------------------------------------------------------------------------
 // Component: StoryFrame

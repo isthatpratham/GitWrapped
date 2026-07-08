@@ -48,9 +48,7 @@ export function calculateStreaks(contributions: ContributionHistory): StreakAnal
   // The current streak can be active if there is activity today or yesterday.
   // We assume the last day of the calendar is the reference point (e.g. Dec 31).
   // Let's check from the end of the array backwards.
-  let runningStreak = 0;
   let streakStart: string | null = null;
-  const today = new Date().toISOString().split("T")[0];
 
   // We walk backwards from the end of the calendar.
   let activeBackwardStreak = 0;

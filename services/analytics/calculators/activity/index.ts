@@ -5,7 +5,7 @@
 // coding analysis.
 // ---------------------------------------------------------------------------
 
-import type { Commit, PullRequest, Issue, ContributionHistory } from "@/domain/models";
+import type { Commit, PullRequest, Issue } from "@/domain/models";
 import type { AnalyticsActivity } from "@/services/analytics/analytics.types";
 import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
 import { createNormalizedScore } from "@/services/analytics/analytics.utils";
@@ -14,7 +14,6 @@ export function calculateActivity(
   commits: ReadonlyArray<Commit>,
   pullRequests: ReadonlyArray<PullRequest>,
   issues: ReadonlyArray<Issue>,
-  contributions: ContributionHistory,
 ): AnalyticsActivity {
   // 1. Commits Analysis
   const totalCommitsCount = commits.length;

@@ -9,7 +9,7 @@ import {
   type GetUserPullRequestsData,
   type GetUserPullRequestsVariables,
 } from "../queries";
-import { getYearDateRange } from "./user.service";
+
 
 // ---------------------------------------------------------------------------
 // Zod schema: Pull Request

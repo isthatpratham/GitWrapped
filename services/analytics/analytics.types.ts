@@ -9,7 +9,6 @@ import type {
   UserProfile,
   Repository,
   ContributionHistory,
-  LanguageProfile,
   Organization,
   PullRequest,
   Issue,

@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------
 
 import type { ContributionHistory } from "@/domain/models";
-import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
 import { MONTH_NAMES, DAY_NAMES } from "@/services/analytics/analytics.utils";
 
 export interface ContributionsCalculationResult {

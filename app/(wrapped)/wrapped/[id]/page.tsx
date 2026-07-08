@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getWrappedStoryDeck } from "@/app/actions/wrapped";
 import type { StorySlide } from "@/services/story";
 import { clsx } from "clsx";
-import { Viewport, Container, Stack, Flex, Grid } from "@/components/layout";
+import { Viewport, Stack, Flex, Grid } from "@/components/layout";
 import {
   StoryFrame,
   StoryProgress,
@@ -34,8 +34,7 @@ import {
   Code,
 } from "@/components/ui";
 import { Fade, FadeUp, Scale, BlurReveal, Counter } from "@/components/motion";
-import { Github, Star, Award, Code as CodeIcon, BookOpen, Share2, RefreshCw } from "@/components/icons";
-import type { Commit } from "@/domain/models";
+import { Github, Star, Award, BookOpen, Share2, RefreshCw } from "@/components/icons";
 import { getNumericSizeClass, getRepoNameSizeClass } from "@/lib/numeric-scale";
 
 // Duration of each slide in milliseconds (default: 6 seconds)

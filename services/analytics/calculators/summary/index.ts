@@ -21,7 +21,6 @@ interface SummaryInputs {
 
 export function calculateSummary(inputs: SummaryInputs): AnalyticsSummary {
   const {
-    handle,
     totalContributions,
     commitCount,
     prCount,
