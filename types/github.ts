@@ -1,27 +1,13 @@
-export interface GitHubUser {
-  login: string;
-  name: string | null;
-  avatarUrl: string;
-  bio: string | null;
-  createdAt: string;
-}
+// ---------------------------------------------------------------------------
+// Compatibility exports for legacy types
+// ---------------------------------------------------------------------------
+// These types are kept for legacy compatibility but the canonical models
+// have moved to `domain/models/`.
+//
+// New features should import directly from `@/domain/models`.
+// ---------------------------------------------------------------------------
 
-export interface ContributionDay {
-  date: string;
-  contributionCount: number;
-}
-
-export interface LanguageStats {
-  name: string;
-  color: string;
-  size: number;
-}
-
-export interface RepositoryHighlight {
-  name: string;
-  owner: string;
-  starCount: number;
-  forkCount: number;
-  primaryLanguage: string | null;
-  commitCount: number;
-}
+export type { UserProfile as GitHubUser } from "@/domain/models/user";
+export type { ContributionDay } from "@/domain/models/contribution";
+export type { LanguageUsage as LanguageStats } from "@/domain/models/language";
+export type { Repository as RepositoryHighlight } from "@/domain/models/repository";

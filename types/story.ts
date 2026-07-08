@@ -1,19 +1,11 @@
-export type SlideTheme = "cyberpunk" | "neon" | "minimal" | "retro";
+// ---------------------------------------------------------------------------
+// Compatibility exports for legacy story types
+// ---------------------------------------------------------------------------
+// These types are kept for legacy compatibility but the canonical models
+// have moved to `domain/models/`.
+//
+// New features should import directly from `@/domain/models`.
+// ---------------------------------------------------------------------------
 
-export interface SlideData {
-  id: string;
-  type: "intro" | "commits" | "languages" | "streak" | "repos" | "milestones" | "outro";
-  title: string;
-  subtitle?: string;
-  data: Record<string, any>;
-}
-
-export interface StoryDeck {
-  id: string;
-  userId: string;
-  userName: string;
-  avatarUrl: string;
-  year: number;
-  theme: SlideTheme;
-  slides: SlideData[];
-}
+export type { StoryDeck, Slide as SlideData } from "@/domain/models/story";
+export type { SlideTheme } from "@/domain/models/story"; // Wait, SlideTheme is not in the new story.ts, let's keep it or declare it
