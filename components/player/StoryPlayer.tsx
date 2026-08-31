@@ -16,7 +16,7 @@ import {
   Caption,
 } from "@/components/ui";
 import { FadeUp, Scale } from "@/components/motion";
-import { Github, RefreshCw, Share2 } from "@/components/icons";
+import { Github, RefreshCw, Share2, X } from "@/components/icons";
 import {
   buildChapterProgress,
   buildShareCardSvg,
@@ -32,7 +32,8 @@ import {
   shareCardStats,
   slideMotion,
   swipeNavDirection,
-  keyboardNavAction,
+  resolvePlayerKeyAction,
+  storyProgressPercent,
   wheelNavDirection,
   NAV_LOCK_MS,
 } from "@/lib/player";
@@ -120,6 +121,14 @@ export function StoryPlayer({
     setActiveIndex(replayPlayerIndex());
   }, [resetTimers]);
 
+  const handleClose = useCallback(
+    (event?: { stopPropagation?: () => void }) => {
+      event?.stopPropagation?.();
+      onClose();
+    },
+    [onClose],
+  );
+
   const togglePause = useCallback(() => {
     setIsPaused((prev) => {
       if (!prev) pausedTimeRef.current = progressRef.current;
@@ -170,19 +179,19 @@ export function StoryPlayer({
     frameRef.current?.focus();
   }, []);
 
-  const handlersRef = useRef({ handleNext, handlePrev, handleReplay, onClose, togglePause });
+  const handlersRef = useRef({ handleNext, handlePrev, handleReplay, handleClose, togglePause });
   useEffect(() => {
-    handlersRef.current = { handleNext, handlePrev, handleReplay, onClose, togglePause };
+    handlersRef.current = { handleNext, handlePrev, handleReplay, handleClose, togglePause };
   });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const action = keyboardNavAction(event.code);
+      const action = resolvePlayerKeyAction(event.code, event.target);
       if (!action) return;
       event.preventDefault();
       if (action === "next") handlersRef.current.handleNext();
       if (action === "prev") handlersRef.current.handlePrev();
-      if (action === "close") handlersRef.current.onClose();
+      if (action === "close") handlersRef.current.handleClose();
     };
     const onWheel = (event: WheelEvent) => {
       const direction = wheelNavDirection(event.deltaY);
@@ -329,6 +338,15 @@ export function StoryPlayer({
                 onClick={handleNext}
                 className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 cursor-pointer"
               >
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="absolute top-3 right-3 z-overlay h-10 w-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  aria-label="Close story"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
                 <Stack space={6} className="items-center">
                   <Flex className="gap-2">
                     <Github className="h-6 w-6 text-primary" />
@@ -360,7 +378,7 @@ export function StoryPlayer({
                   avatarUrl={story.metadata.avatarUrl}
                   username={story.metadata.username}
                   subtitle="Share your story"
-                  onClose={onClose}
+                  onClose={handleClose}
                 />
                 <StoryNavigation onNext={() => undefined} onPrev={handlePrev} disableNext />
                 <div className="flex-1 flex flex-col justify-center items-center overflow-auto">
@@ -394,7 +412,7 @@ export function StoryPlayer({
                             <RefreshCw className="h-3 w-3" />
                             Run It Back
                           </Button>
-                          <Button onClick={onClose} variant="outline" size="sm" className="w-full">
+                          <Button onClick={() => handleClose()} variant="outline" size="sm" className="w-full">
                             Return Home
                           </Button>
                         </Grid>
@@ -417,6 +435,7 @@ export function StoryPlayer({
                   <StoryProgress
                     groups={chapterProgress.groups}
                     label={chapterProgress.storyLabel}
+                    valueNow={Math.round(storyProgressPercent(activeIndex, slides.length, progress))}
                     onSegmentClick={(index) => navigateTo(index)}
                   />
                   <StoryHeader
@@ -425,7 +444,7 @@ export function StoryPlayer({
                     subtitle={chapterProgress.currentTitle || `${story.year} Recap`}
                     isPaused={isPaused}
                     onPauseToggle={togglePause}
-                    onClose={onClose}
+                    onClose={handleClose}
                   />
                 </div>
                 <StoryNavigation

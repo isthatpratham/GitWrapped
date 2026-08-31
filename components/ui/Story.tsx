@@ -44,36 +44,53 @@ export interface StoryProgressProps {
     readonly segments: ReadonlyArray<{ readonly index: number; readonly fill: number }>;
   }>;
   readonly label: string;
+  readonly valueNow?: number;
   readonly onSegmentClick?: (index: number) => void;
 }
 
-export function StoryProgress({ groups, label, onSegmentClick }: StoryProgressProps) {
+export function StoryProgress({ groups, label, valueNow, onSegmentClick }: StoryProgressProps) {
+  const segments = groups.flatMap((group) => group.segments);
+  const overall =
+    valueNow ??
+    (segments.length === 0
+      ? 0
+      : Math.round(segments.reduce((sum, segment) => sum + segment.fill, 0) / segments.length));
+
   return (
-    <div className="w-full px-4 pt-3 pb-1 z-raised">
-      <div className="flex gap-2" role="group" aria-label={label}>
-        {groups.map((group) => (
-          <div
-            key={group.chapter}
-            className="flex flex-1 gap-0.5 min-w-0"
-            role="group"
-            aria-label={group.title}
-          >
+    <div className="relative z-overlay w-full px-4 pt-3 pb-1 pointer-events-auto">
+      <div
+        className="flex w-full items-center gap-[2px]"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={overall}
+        aria-valuetext={label}
+        aria-label={label}
+      >
+        {groups.map((group, groupIndex) => (
+          <React.Fragment key={group.chapter}>
+            {groupIndex > 0 ? <span className="w-px shrink-0" aria-hidden="true" /> : null}
             {group.segments.map((segment) => (
               <button
                 key={segment.index}
                 type="button"
-                onClick={() => onSegmentClick?.(segment.index)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSegmentClick?.(segment.index);
+                }}
                 aria-label={`${group.title}, slide ${segment.index + 1}`}
                 aria-current={segment.fill > 0 && segment.fill < 100 ? "true" : undefined}
-                className="h-1 flex-1 min-w-1 bg-white/15 rounded-full overflow-hidden cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="relative h-4 flex-1 min-w-0 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <span
-                  className="block h-full bg-primary rounded-full"
-                  style={{ width: `${segment.fill}%` }}
-                />
+                <span className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 overflow-hidden rounded-full bg-white/20">
+                  <span
+                    className="block h-full rounded-full bg-white/90"
+                    style={{ width: `${segment.fill}%` }}
+                  />
+                </span>
               </button>
             ))}
-          </div>
+          </React.Fragment>
         ))}
       </div>
     </div>
@@ -101,33 +118,42 @@ export function StoryHeader({
   onPauseToggle,
   onClose,
 }: StoryHeaderProps) {
+  const stopAnd = (event: React.SyntheticEvent, action?: () => void) => {
+    event.stopPropagation();
+    action?.();
+  };
+
   return (
-    <div className="w-full flex items-center justify-between px-4 py-2 z-raised border-b border-border/10 bg-gradient-to-b from-black/40 to-transparent">
-      <div className="flex items-center gap-2.5">
+    <div className="relative z-overlay w-full flex items-center justify-between px-4 py-2 pointer-events-auto border-b border-border/10 bg-gradient-to-b from-black/40 to-transparent">
+      <div className="flex items-center gap-2.5 min-w-0">
         <Avatar src={avatarUrl} size="sm" />
-        <div className="flex flex-col">
-          <span className="font-sans text-sm font-semibold tracking-tight text-foreground">{username}</span>
-          <Caption className="text-[10px] text-white/50">{subtitle}</Caption>
+        <div className="flex flex-col min-w-0">
+          <span className="font-sans text-sm font-semibold tracking-tight text-foreground truncate">{username}</span>
+          <Caption className="text-[10px] text-white/50 truncate">{subtitle}</Caption>
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 shrink-0">
         {onPauseToggle && (
           <button
-            onClick={onPauseToggle}
-            className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-            aria-label={isPaused ? "Play" : "Pause"}
+            type="button"
+            onClick={(event) => stopAnd(event, onPauseToggle)}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="h-10 w-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            aria-label={isPaused ? "Play story" : "Pause story"}
           >
             {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
           </button>
         )}
         {onClose && (
           <button
-            onClick={onClose}
-            className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-            aria-label="Close"
+            type="button"
+            onClick={(event) => stopAnd(event, onClose)}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="h-10 w-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            aria-label="Close story"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -158,10 +184,18 @@ export function StoryNavigation({
   disablePrev = false,
 }: StoryNavigationProps) {
   return (
-    <div className={clsx("absolute inset-y-0 inset-x-0 flex pointer-events-none z-raised", className)}>
+    <div
+      className={clsx(
+        "absolute inset-x-0 top-22 bottom-18 flex pointer-events-none z-raised",
+        className,
+      )}
+    >
       <button
         type="button"
-        onClick={onPrev}
+        onClick={(event) => {
+          event.stopPropagation();
+          onPrev();
+        }}
         disabled={disablePrev}
         className="w-1/4 h-full pointer-events-auto cursor-w-resize group flex items-center justify-start pl-4 disabled:cursor-default focus-visible:outline-none"
         aria-label="Previous slide"
@@ -173,7 +207,10 @@ export function StoryNavigation({
       <div className="flex-1 h-full" />
       <button
         type="button"
-        onClick={onNext}
+        onClick={(event) => {
+          event.stopPropagation();
+          onNext();
+        }}
         disabled={disableNext}
         className="w-1/4 h-full pointer-events-auto cursor-e-resize group flex items-center justify-end pr-4 disabled:cursor-default focus-visible:outline-none"
         aria-label="Next slide"
@@ -224,7 +261,7 @@ export function StoryBackground({ theme }: { readonly theme: string }) {
 
 export function StoryFooter({ children }: { readonly children: React.ReactNode }) {
   return (
-    <div className="w-full px-6 py-4 z-raised border-t border-border/10 bg-gradient-to-t from-black/40 to-transparent">
+    <div className="relative z-overlay w-full px-6 py-4 pointer-events-auto border-t border-border/10 bg-gradient-to-t from-black/40 to-transparent">
       {children}
     </div>
   );

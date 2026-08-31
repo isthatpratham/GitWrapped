@@ -23,6 +23,29 @@ export function segmentFill(index: number, activeIndex: number, slideProgress: n
   return 0;
 }
 
+/**
+ * Overall story completion, 0–100.
+ * Splash (index < 0) is 0. Share (index >= slideCount) is 100.
+ * No off-by-one: slide N of C at p% is ((N + p/100) / C) * 100.
+ */
+export function storyProgressPercent(
+  activeIndex: number,
+  slideCount: number,
+  slideProgress: number,
+): number {
+  if (slideCount <= 0) return 0;
+  if (activeIndex < 0) return 0;
+  if (activeIndex >= slideCount) return 100;
+  const filled = activeIndex + Math.max(0, Math.min(100, slideProgress)) / 100;
+  return Math.max(0, Math.min(100, (filled / slideCount) * 100));
+}
+
+export function flattenProgressSegments(
+  groups: readonly ChapterProgressGroup[],
+): readonly ProgressSegment[] {
+  return groups.flatMap((group) => group.segments);
+}
+
 export function buildChapterProgress(
   slides: ReadonlyArray<ProgressSlide>,
   activeIndex: number,

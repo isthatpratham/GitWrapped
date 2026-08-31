@@ -47,6 +47,44 @@ export function keyboardNavAction(code: string): KeyboardNavAction | null {
   return null;
 }
 
+const INTERACTIVE_PLAYER_SELECTOR = "button, a, input, textarea, select, [role='button']";
+
+/**
+ * True when a key event originated on a control that must keep Space/Enter.
+ * Duck-typed so unit tests can run in the Node environment.
+ */
+export function isInteractivePlayerTarget(target: EventTarget | null): boolean {
+  if (target == null || typeof target !== "object") return false;
+  const node = target as {
+    closest?: (selector: string) => unknown;
+    matches?: (selector: string) => boolean;
+  };
+  if (typeof node.closest === "function") {
+    return Boolean(node.closest(INTERACTIVE_PLAYER_SELECTOR));
+  }
+  if (typeof node.matches === "function") {
+    return Boolean(node.matches(INTERACTIVE_PLAYER_SELECTOR));
+  }
+  return false;
+}
+
+/**
+ * Resolve a player shortcut, leaving Space/Enter on focused chrome (close, pause, share).
+ * Escape always closes.
+ */
+export function resolvePlayerKeyAction(
+  code: string,
+  target: EventTarget | null,
+): KeyboardNavAction | null {
+  const action = keyboardNavAction(code);
+  if (!action) return null;
+  if (action === "close") return "close";
+  if ((code === "Space" || code === "Enter") && isInteractivePlayerTarget(target)) {
+    return null;
+  }
+  return action;
+}
+
 export function wheelNavDirection(deltaY: number, threshold: number = WHEEL_THRESHOLD): NavDirection | null {
   if (deltaY >= threshold) return "next";
   if (deltaY <= -threshold) return "prev";

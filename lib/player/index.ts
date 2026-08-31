@@ -11,18 +11,25 @@ export {
   replayPlayerIndex,
   canNavigate,
   keyboardNavAction,
+  resolvePlayerKeyAction,
+  isInteractivePlayerTarget,
   wheelNavDirection,
   swipeNavDirection,
 } from "./navigation";
 export type { PlayerPhase, NavDirection, KeyboardNavAction } from "./navigation";
 
-export { segmentFill, buildChapterProgress } from "./progress";
+export { STORY_PLAYER_CLOSE_PATH, storyPlayerClosePath } from "./close";
+
+export { segmentFill, storyProgressPercent, flattenProgressSegments, buildChapterProgress } from "./progress";
 export type { ProgressSlide, ProgressSegment, ChapterProgressGroup } from "./progress";
 
 export { LOADING_LINES, READY_LINE, loadingLine, shouldEnterStory } from "./loading";
 
 export { recapErrorCopy, recapErrorCode } from "./errors";
 export type { RecapErrorCopy } from "./errors";
+
+export { unwrapWrappedDeck } from "./deck-result";
+export type { WrappedDeckResult } from "./deck-result";
 
 export {
   recapShareUrl,
