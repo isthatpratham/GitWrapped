@@ -129,6 +129,7 @@ export function baseAnalytics(overrides: Partial<AnalyticsResult> = {}): Analyti
     },
     repositories: {
       favoriteRepository: null,
+      peakDayRepository: null,
       fastestGrowingRepository: null,
       mostActiveRepository: null,
       oldestActiveRepository: null,
@@ -303,6 +304,12 @@ export function richAnalytics(): AnalyticsResult {
         starCount: 12,
         url: "https://github.com/octocat/hello-world",
       },
+      peakDayRepository: {
+        name: "hello-world",
+        ownerName: "octocat",
+        starCount: 12,
+        url: "https://github.com/octocat/hello-world",
+      },
       fastestGrowingRepository: { name: "hello-world", starGrowth: 0.1 },
       mostActiveRepository: { name: "hello-world", commitCount: 210 },
       oldestActiveRepository: { name: "hello-world", ageDays: 4000 },
@@ -347,4 +354,56 @@ export function richAnalytics(): AnalyticsResult {
       peakDayRepository: availableMeasured(),
     },
   });
+}
+
+/**
+ * Regression fixture: peak-day activity belongs to one repository, highest
+ * star count belongs to another. Names exist only in tests, not production.
+ */
+export function divergentRepositoryAnalytics(): AnalyticsResult {
+  const rich = richAnalytics();
+  return {
+    ...rich,
+    user: {
+      ...rich.user,
+      handle: "isthatpratham",
+      displayName: "Pratham",
+    },
+    overview: {
+      ...rich.overview,
+      totalCommits: 300,
+    },
+    productivity: {
+      ...rich.productivity,
+      mostProductiveDay: { date: "2026-08-31", count: 18 },
+      peakContributionDay: {
+        date: "2026-08-31",
+        count: 18,
+        repositoryPath: "isthatpratham/DeadDrop",
+      },
+    },
+    repositories: {
+      ...rich.repositories,
+      favoriteRepository: {
+        name: "pratham-folio",
+        ownerName: "isthatpratham",
+        starCount: 22,
+        url: "https://github.com/isthatpratham/pratham-folio",
+      },
+      peakDayRepository: {
+        name: "DeadDrop",
+        ownerName: "isthatpratham",
+        starCount: 3,
+        url: "https://github.com/isthatpratham/DeadDrop",
+      },
+      mostActiveRepository: { name: "notes", commitCount: 40 },
+    },
+    timeline: emptyTimeline(2026, [
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: `2026-01-${String(index + 1).padStart(2, "0")}`,
+        count: 1,
+      })),
+      { date: "2026-08-31", count: 18 },
+    ]),
+  };
 }

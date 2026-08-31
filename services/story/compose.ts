@@ -106,10 +106,26 @@ function metadataFor(insight: RankedInsight, analytics: AnalyticsResult): Record
     case "language-evolution":
       return { breakdown: analytics.languages.languageDistribution };
     case "repository-concentration":
+      return {
+        mostActiveRepository: analytics.repositories.mostActiveRepository,
+      };
     case "peak-repository":
       return {
-        favoriteRepository: analytics.repositories.favoriteRepository,
-        mostActiveRepository: analytics.repositories.mostActiveRepository,
+        peakDayRepository: analytics.repositories.peakDayRepository ?? {
+          name: payload.name,
+          ownerName: payload.ownerName,
+          starCount: payload.starCount,
+          url: payload.url,
+        },
+      };
+    case "most-starred-repository":
+      return {
+        mostStarredRepository: {
+          name: payload.name,
+          ownerName: payload.ownerName,
+          starCount: payload.starCount,
+          url: payload.url,
+        },
       };
     case "monthly-growth":
       return { quarters: analytics.timeline.quarterly };

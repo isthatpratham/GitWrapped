@@ -74,4 +74,26 @@ describe("story copy templates", () => {
   it("keeps welcome copy tied to the recap year", () => {
     expect(welcomeCopy("octocat", "The Octocat", 2026).headline).toBe("Hey, The Octocat.");
   });
+
+  it("describes peak-day repository activity without claiming ownership", () => {
+    const copy = copyForInsight(
+      insight({
+        kind: "peak-repository",
+        payload: {
+          kind: "peak-repository",
+          repositoryPath: "isthatpratham/DeadDrop",
+          date: "2026-08-31",
+          count: 18,
+          ownerName: "isthatpratham",
+          name: "DeadDrop",
+          starCount: 3,
+          url: "https://github.com/isthatpratham/DeadDrop",
+        },
+      }),
+      "isthatpratham",
+    );
+    expect(copy.headline.toLowerCase()).not.toContain("owned");
+    expect(copy.headline).toContain("isthatpratham/DeadDrop");
+    expect(copy.headline).toContain("saw the most activity on your biggest day");
+  });
 });

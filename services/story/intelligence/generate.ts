@@ -90,6 +90,14 @@ export function generateStoryInsights(analytics: AnalyticsResult): readonly Stor
     attributedPeakRepository &&
     isAvailable(analytics.availability.peakDayRepository)
   ) {
+    const peakRepo = analytics.repositories.peakDayRepository;
+    const slash = attributedPeakRepository.indexOf("/");
+    const pathOwner =
+      peakRepo?.ownerName ||
+      (slash > 0 ? attributedPeakRepository.slice(0, slash) : "");
+    const pathName =
+      peakRepo?.name ||
+      (slash > 0 ? attributedPeakRepository.slice(slash + 1) : attributedPeakRepository);
     insights.push(
       insight({
         id: "peak-repository",
@@ -113,6 +121,46 @@ export function generateStoryInsights(analytics: AnalyticsResult): readonly Stor
           repositoryPath: attributedPeakRepository,
           date: attributedPeakDay.date,
           count: attributedPeakDay.count,
+          ownerName: pathOwner,
+          name: pathName,
+          starCount: peakRepo?.starCount ?? null,
+          url: peakRepo?.url ?? null,
+        },
+      }),
+    );
+  }
+
+  const mostStarred = analytics.repositories.favoriteRepository;
+  if (
+    isAvailable(analytics.availability.repositories) &&
+    mostStarred &&
+    mostStarred.starCount > 0
+  ) {
+    const mostStarredPath = `${mostStarred.ownerName}/${mostStarred.name}`;
+    insights.push(
+      insight({
+        id: "most-starred-repository",
+        kind: "most-starred-repository",
+        family: "most-starred",
+        chapter: "YOUR_BUILD",
+        slideType: "Repositories",
+        availability: analytics.availability.repositories,
+        strength: clampScore(20 + Math.min(80, mostStarred.starCount * 2)),
+        uniqueness: clampScore(mostStarred.starCount),
+        narrativeValue: 64,
+        surprise: mostStarred.starCount >= 20 ? 25 : 8,
+        shareable: true,
+        heroValue: mostStarred.starCount,
+        evidence: [
+          { label: "Repository", value: mostStarredPath },
+          { label: "Stars", value: String(mostStarred.starCount) },
+        ],
+        payload: {
+          kind: "most-starred-repository",
+          ownerName: mostStarred.ownerName,
+          name: mostStarred.name,
+          starCount: mostStarred.starCount,
+          url: mostStarred.url,
         },
       }),
     );

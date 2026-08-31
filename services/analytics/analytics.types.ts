@@ -207,13 +207,30 @@ export interface AnalyticsLanguages {
   readonly dormantLanguages: ReadonlyArray<string>; // languages used in past years but not active this year
 }
 
+export interface PeakDayRepositoryHighlight {
+  readonly name: string;
+  readonly ownerName: string;
+  /** Stars for this repository only. Null when the peak-day path is not in the user's repository list. */
+  readonly starCount: number | null;
+  readonly url: string | null;
+}
+
 export interface AnalyticsRepositories {
+  /**
+   * Repository with the highest star count among the user's public repositories.
+   * This is not the peak-day repository and must not be substituted for it.
+   */
   readonly favoriteRepository: {
     readonly name: string;
     readonly ownerName: string;
     readonly starCount: number;
     readonly url: string;
   } | null;
+  /**
+   * Repository responsible for peak-day attributed commits (`contributions.peakDay.repositoryPath`).
+   * Identity and metadata come only from that path (and that repository's own record when present).
+   */
+  readonly peakDayRepository: PeakDayRepositoryHighlight | null;
   readonly fastestGrowingRepository: {
     readonly name: string;
     readonly starGrowth: number;

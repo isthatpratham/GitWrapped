@@ -6,6 +6,7 @@ export type InsightKind =
   | "longest-streak"
   | "peak-day"
   | "peak-repository"
+  | "most-starred-repository"
   | "night-activity"
   | "weekend-activity"
   | "language-dominance"
@@ -25,6 +26,7 @@ export type InsightFamily =
   | "coding-time"
   | "language"
   | "repository"
+  | "most-starred"
   | "momentum"
   | "comeback"
   | "achievement"
@@ -57,6 +59,17 @@ export type InsightPayload =
       readonly repositoryPath: string;
       readonly date: string;
       readonly count: number;
+      readonly ownerName: string;
+      readonly name: string;
+      readonly starCount: number | null;
+      readonly url: string | null;
+    }
+  | {
+      readonly kind: "most-starred-repository";
+      readonly ownerName: string;
+      readonly name: string;
+      readonly starCount: number;
+      readonly url: string;
     }
   | {
       readonly kind: "night-activity";

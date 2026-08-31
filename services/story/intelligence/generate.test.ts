@@ -13,6 +13,8 @@ describe("generateStoryInsights", () => {
     expect(kinds).toContain("night-activity");
     expect(kinds).toContain("language-dominance");
     expect(kinds).toContain("repository-concentration");
+    expect(kinds).toContain("peak-repository");
+    expect(kinds).toContain("most-starred-repository");
   });
 
   it("does not invent night activity when coding hours are unavailable", () => {

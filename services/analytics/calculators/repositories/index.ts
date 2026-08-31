@@ -6,21 +6,65 @@
 // ---------------------------------------------------------------------------
 
 import type { Repository, ContributionHistory } from "@/domain/models";
-import type { AnalyticsRepositories } from "@/services/analytics/analytics.types";
+import type { AnalyticsRepositories, PeakDayRepositoryHighlight } from "@/services/analytics/analytics.types";
+
+function parseRepositoryPath(path: string): { ownerName: string; name: string } {
+  const slash = path.indexOf("/");
+  if (slash <= 0 || slash === path.length - 1) {
+    return { ownerName: "", name: path };
+  }
+  return {
+    ownerName: path.slice(0, slash),
+    name: path.slice(slash + 1),
+  };
+}
+
+function resolvePeakDayRepository(
+  repositories: ReadonlyArray<Repository>,
+  contributions: ContributionHistory,
+): PeakDayRepositoryHighlight | null {
+  const path = contributions.peakDay?.repositoryPath;
+  if (!path) return null;
+
+  const match = repositories.find((repository) => `${repository.ownerName}/${repository.name}` === path);
+  if (match) {
+    return {
+      name: match.name,
+      ownerName: match.ownerName,
+      starCount: match.starCount,
+      url: match.url,
+    };
+  }
+
+  const identity = parseRepositoryPath(path);
+  return {
+    name: identity.name,
+    ownerName: identity.ownerName,
+    starCount: null,
+    url: null,
+  };
+}
+
+function emptyHighlights(peakDayRepository: PeakDayRepositoryHighlight | null): AnalyticsRepositories {
+  return {
+    favoriteRepository: null,
+    peakDayRepository,
+    fastestGrowingRepository: null,
+    mostActiveRepository: null,
+    oldestActiveRepository: null,
+    newestRepository: null,
+    repositoryGrowthTimeline: [],
+  };
+}
 
 export function calculateRepositories(
   repositories: ReadonlyArray<Repository>,
   contributions: ContributionHistory,
 ): AnalyticsRepositories {
+  const peakDayRepository = resolvePeakDayRepository(repositories, contributions);
+
   if (repositories.length === 0) {
-    return {
-      favoriteRepository: null,
-      fastestGrowingRepository: null,
-      mostActiveRepository: null,
-      oldestActiveRepository: null,
-      newestRepository: null,
-      repositoryGrowthTimeline: [],
-    };
+    return emptyHighlights(peakDayRepository);
   }
 
   // Favorite Repository: Highest starCount. Fallback to forkCount.
@@ -83,6 +127,7 @@ export function calculateRepositories(
           url: favoriteRepo.url,
         }
       : null,
+    peakDayRepository,
     fastestGrowingRepository: fastestGrowing
       ? {
           name: fastestGrowing.name,

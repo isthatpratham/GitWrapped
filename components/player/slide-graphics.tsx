@@ -9,7 +9,7 @@ import { Badge, Button, Caption, Code, MetricCard } from "@/components/ui";
 import { Fade, FadeUp, Scale, BlurReveal, Counter } from "@/components/motion";
 import { Award, BookOpen, Github, RefreshCw, Star } from "@/components/icons";
 import { getNumericSizeClass, getRepoNameSizeClass } from "@/lib/numeric-scale";
-import { isUnavailableMoment } from "@/lib/player";
+import { isUnavailableMoment, selectRepositoryCard } from "@/lib/player";
 
 function languageBreakdownRows(
   value: unknown,
@@ -27,21 +27,6 @@ function languageBreakdownRows(
     rows.push({ name, percentage, color });
   }
   return rows;
-}
-
-function repositoryPreview(value: unknown): {
-  readonly name: string;
-  readonly ownerName: string;
-  readonly starCount: number;
-} | null {
-  if (!value || typeof value !== "object") return null;
-  const record = value as Record<string, unknown>;
-  if (typeof record.name !== "string") return null;
-  return {
-    name: record.name,
-    ownerName: typeof record.ownerName === "string" ? record.ownerName : "",
-    starCount: typeof record.starCount === "number" ? record.starCount : 0,
-  };
 }
 
 function organizationRows(value: unknown): ReadonlyArray<{ handle: string; repositoryCount: number }> {
@@ -166,19 +151,22 @@ export function SlideGraphic({
       );
     }
     case "Repositories": {
-      const favRepo = repositoryPreview(metadata.favoriteRepository);
-      const repoOwner = favRepo?.ownerName ?? "";
-      const repoName = favRepo?.name ?? "Unknown repository";
+      const card = selectRepositoryCard(metadata);
+      if (!card) return null;
+      const repoOwner = card.ownerName;
+      const repoName = card.name;
       const fullPath = repoOwner ? `${repoOwner}/${repoName}` : repoName;
       return (
         <Stack space={2} className="items-center">
           <div className="p-4 bg-surface border border-border rounded-md w-full max-w-[280px] text-left overflow-hidden">
             <Flex justify="between" className="mb-3 min-w-0">
               <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
-              <Flex className="gap-1 text-xs font-semibold text-muted-foreground tabular-nums flex-shrink-0">
-                <Star className="h-3 w-3 text-warning" />
-                {(favRepo?.starCount ?? 0).toLocaleString()}
-              </Flex>
+              {card.starCount !== null ? (
+                <Flex className="gap-1 text-xs font-semibold text-muted-foreground tabular-nums flex-shrink-0">
+                  <Star className="h-3 w-3 text-warning" />
+                  {card.starCount.toLocaleString()}
+                </Flex>
+              ) : null}
             </Flex>
             {repoOwner ? (
               <span className="font-mono text-[10px] text-muted-foreground/70 block leading-none mb-0.5 [overflow-wrap:anywhere]">

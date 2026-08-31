@@ -30,6 +30,7 @@ export type {
   AnalyticsActivity,
   AnalyticsLanguages,
   AnalyticsRepositories,
+  PeakDayRepositoryHighlight,
   AnalyticsOrganizations,
   AnalyticsAchievements,
   AnalyticsAchievement,

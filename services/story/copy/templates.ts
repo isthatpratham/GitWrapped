@@ -50,10 +50,18 @@ export function copyForInsight(insight: StoryInsight, handle: string): StoryCopy
 
     case "peak-repository":
       return {
-        title: "Main Character Project",
+        title: "Peak Day Repository",
         subtitle: payload.repositoryPath,
-        headline: `${payload.repositoryPath} owned your peak day.`,
+        headline: `${payload.repositoryPath} saw the most activity on your biggest day.`,
         description: `On ${formatCalendarDate(payload.date)}, most attributed commits on that UTC date went to this repository.`,
+      };
+
+    case "most-starred-repository":
+      return {
+        title: "Most Starred",
+        subtitle: `${payload.ownerName}/${payload.name}`,
+        headline: `${payload.ownerName}/${payload.name} was your most-starred public repository.`,
+        description: `${payload.starCount.toLocaleString()} stars on that repository. Star count is not how much you committed there.`,
       };
 
     case "night-activity":

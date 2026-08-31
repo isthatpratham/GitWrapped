@@ -36,3 +36,6 @@ export { escapeXml, shareCardFileStem, buildShareCardSvg } from "./share-card";
 
 export { SLIDE_TRANSITION_MS, REDUCED_TRANSITION_MS, slideMotion, chapterChanged, isUnavailableMoment } from "./motion";
 export type { SlideMotion } from "./motion";
+
+export { selectRepositoryCard } from "./repository-card";
+export type { SlideRepositoryCard } from "./repository-card";
