@@ -1,188 +1,132 @@
 # Contributing to GitWrapped
 
-First of all, thank you for considering contributing to GitWrapped.
+Thank you for helping. Small, careful changes beat large, rushed ones.
 
-Whether you're fixing a typo, improving performance, designing animations, or implementing new analytics, every contribution is appreciated.
+Before you write code, check:
 
----
-
-# Project Philosophy
-
-GitWrapped values quality over quantity.
-
-We prefer one well-crafted contribution over ten rushed ones.
-
-Before writing code, ask yourself:
-
-- Does this improve the experience?
-- Is the implementation maintainable?
-- Does it match the project's design philosophy?
+- Does this improve the story experience?
+- Does it stay maintainable?
+- Does it match the design philosophy?
 - Is it simple enough?
 
 ---
 
-# Design Philosophy
+## How a contribution should flow
+
+```mermaid
+flowchart LR
+  A["Fork / branch"] --> B["Implement"]
+  B --> C["npm test"]
+  C --> D["npm run type-check"]
+  D --> E["npm run build"]
+  E --> F["Open a focused PR"]
+```
+
+---
+
+## Local setup
+
+```bash
+git clone https://github.com/isthatpratham/GitWrapped.git
+cd GitWrapped
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Add `GITHUB_TOKEN` to `.env.local` only. Do not commit secrets, tokens, or `.env` files.
+
+---
+
+## Architecture rules
+
+Keep the pipeline intact:
+
+```text
+GitHub → validated data → analytics → Story Intelligence → Story Player
+```
+
+| Layer | May | Must not |
+| --- | --- | --- |
+| `sdk/github/` | Fetch, validate, normalize | Invent insights or copy |
+| `services/analytics/` | Compute evidence and availability | Fabricate timestamps or fill unavailable data with `0` |
+| `services/story/` | Select and compose slides | Claim facts the analytics did not produce |
+| `components/`, `lib/player/` | Present the story | Call GitHub or run analytics |
+
+Repository metadata on a slide must belong to that repository. Peak Day and most-starred are independent.
+
+---
+
+## Design
 
 GitWrapped is intentionally minimal.
 
-Please avoid introducing:
-
-- unnecessary animations
-- excessive gradients
-- random colors
-- inconsistent spacing
-- multiple fonts
-- generic dashboard components
-- visual clutter
-
-Every interface should feel handcrafted.
+Avoid unnecessary animation, extra fonts, dashboard chrome, random color, and visual clutter. Motion should follow [docs/MOTION_SYSTEM.md](docs/MOTION_SYSTEM.md). Honor `prefers-reduced-motion`.
 
 ---
 
-# Development Principles
+## Code style
 
-- Keep components small.
-- Prefer composition over duplication.
-- Write readable code.
-- Avoid premature optimization.
-- Keep business logic separate from UI.
-- Reuse existing utilities whenever possible.
+- TypeScript, strict, no `any` or `@ts-ignore`
+- Small components, one responsibility
+- Business logic out of JSX
+- Prefer existing utilities over new dependencies
+- Colocate tests as `*.test.ts` next to the code
 
 ---
 
-# Branch Naming
+## Tests and checks
 
-Use descriptive branch names.
+Run the real project scripts before you open a PR:
 
-Examples:
-
-```
-feature/github-api
-feature/story-engine
-feature/share-card
-feature/mobile-layout
-
-fix/navigation
-fix/chart-animation
-fix/github-auth
-
-docs/readme
-docs/contributing
-
-refactor/story-generator
+```bash
+npm test
+npm run type-check
+npm run build
 ```
 
+Do not remove regression tests for analytics, availability, Story Intelligence, navigation, progress, close, replay, or sharing.
+
 ---
 
-# Commit Messages
+## Git
 
-Follow Conventional Commits.
-
-Examples:
+Use a descriptive branch off the latest `main`:
 
 ```
-feat: add GitHub contribution analytics
-
-fix: correct streak calculation
-
-refactor: simplify story generator
-
-docs: update README
-
-style: improve landing page spacing
-
-chore: update dependencies
+feat/share-card-fallback
+fix/peak-day-repository
+docs/architecture
 ```
 
----
+Prefer [Conventional Commits](https://www.conventionalcommits.org/):
 
-# Pull Requests
+```
+feat: add first-repository story candidate
+fix: keep close above story tap zones
+docs: clarify analytics availability rules
+```
 
-A good pull request should:
-
-- focus on one feature or fix
-- include a clear description
-- explain the motivation
-- avoid unrelated changes
-
-Large pull requests are difficult to review.
-
-Smaller, focused contributions are preferred.
+Pull requests should cover one change, explain why, and stay free of secrets, generated build output, and unrelated files.
 
 ---
 
-# Code Style
+## Accessibility
 
-- Use TypeScript.
-- Use meaningful names.
-- Avoid unnecessary comments.
-- Remove unused code.
-- Prefer early returns.
-- Avoid deeply nested logic.
-
-If the code is difficult to understand, it probably needs simplifying.
+Keyboard paths, semantic markup, accessible names, visible focus, and screen-reader context are required for Story Player controls (progress, close, share, navigation).
 
 ---
 
-# Component Guidelines
+## Security
 
-Every component should have a single responsibility.
+Never commit `.env`, tokens, API keys, or private credentials. Never print a secret in logs, tests, docs, or PR text. Server-only GitHub configuration stays in `sdk/github/config.ts`.
 
-Prefer reusable components whenever possible.
-
-Avoid copy-pasting UI.
+If you find a leaked credential, report the location and type only. Do not paste the value.
 
 ---
 
-# Accessibility
+## Code of conduct
 
-Every contribution should consider accessibility.
+Be respectful. Be constructive. Assume good intentions.
 
-- Keyboard navigation
-- Semantic HTML
-- Proper labels
-- Sufficient color contrast
-- Screen reader compatibility
-
-Accessibility is a feature, not an afterthought.
-
----
-
-# Performance
-
-Performance is part of the user experience.
-
-Please avoid:
-
-- unnecessary re-renders
-- oversized client components
-- heavy dependencies
-- duplicate API requests
-
----
-
-# Before Opening a Pull Request
-
-Please ensure that:
-
-- the project builds successfully
-- linting passes
-- formatting is consistent
-- no unnecessary files are included
-- documentation is updated if needed
-
----
-
-# Code of Conduct
-
-Be respectful.
-
-Be constructive.
-
-Assume good intentions.
-
-GitWrapped is an inclusive project, and everyone should feel welcome to contribute.
-
----
-
-Thank you for helping make GitWrapped better.
+Thank you for making GitWrapped better.
