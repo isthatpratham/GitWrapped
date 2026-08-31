@@ -1,11 +1,4 @@
-// ---------------------------------------------------------------------------
-// Compatibility exports for legacy story types
-// ---------------------------------------------------------------------------
-// These types are kept for legacy compatibility but the canonical models
-// have moved to `domain/models/`.
-//
-// New features should import directly from `@/domain/models`.
-// ---------------------------------------------------------------------------
+// Compatibility exports for unused legacy story sketches.
+// The live Story Engine contract is `@/services/story`.
 
-export type { StoryDeck, Slide as SlideData } from "@/domain/models/story";
-export type { SlideTheme } from "@/domain/models/story"; // Wait, SlideTheme is not in the new story.ts, let's keep it or declare it
+export type { StoryDeck, Slide as SlideData, SlideTheme } from "@/domain/models/story";
