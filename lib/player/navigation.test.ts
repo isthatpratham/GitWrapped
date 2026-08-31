@@ -7,6 +7,7 @@ import {
   playerPhase,
   prevPlayerIndex,
   replayPlayerIndex,
+  resolvePlayerKeyAction,
   swipeNavDirection,
   wheelNavDirection,
 } from "./navigation";
@@ -37,6 +38,22 @@ describe("story player navigation", () => {
     expect(keyboardNavAction("ArrowLeft")).toBe("prev");
     expect(keyboardNavAction("Escape")).toBe("close");
     expect(keyboardNavAction("KeyP")).toBeNull();
+  });
+
+  it("does not steal Space or Enter from focused close, pause, or share controls", () => {
+    const closeControl = {
+      closest: (selector: string) => (selector.includes("button") ? {} : null),
+    };
+    expect(resolvePlayerKeyAction("Enter", closeControl as unknown as EventTarget)).toBeNull();
+    expect(resolvePlayerKeyAction("Space", closeControl as unknown as EventTarget)).toBeNull();
+    expect(resolvePlayerKeyAction("Escape", closeControl as unknown as EventTarget)).toBe("close");
+    expect(resolvePlayerKeyAction("ArrowRight", closeControl as unknown as EventTarget)).toBe("next");
+    expect(resolvePlayerKeyAction("Space", null)).toBe("next");
+    expect(
+      resolvePlayerKeyAction("Enter", {
+        closest: () => null,
+      } as unknown as EventTarget),
+    ).toBe("next");
   });
 
   it("replays from the opening without requiring a new story", () => {
