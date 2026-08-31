@@ -106,4 +106,69 @@ describe("calculateRepositories peak-day vs most-starred", () => {
     expect(result.peakDayRepository).toBeNull();
     expect(result.favoriteRepository?.name).toBe("pratham-folio");
   });
+
+  it("selects the earliest repository created in the recap year, not the oldest overall", () => {
+    const older = repo({
+      name: "legacy",
+      ownerName: "isthatpratham",
+      starCount: 1,
+      url: "https://github.com/isthatpratham/legacy",
+      createdAt: "2019-04-01T00:00:00.000Z",
+    });
+    const firstInYear = repo({
+      name: "spark",
+      ownerName: "isthatpratham",
+      starCount: 0,
+      url: "https://github.com/isthatpratham/spark",
+      createdAt: "2026-02-03T00:00:00.000Z",
+    });
+    const laterInYear = repo({
+      name: "after",
+      ownerName: "isthatpratham",
+      starCount: 0,
+      url: "https://github.com/isthatpratham/after",
+      createdAt: "2026-11-01T00:00:00.000Z",
+    });
+    const result = calculateRepositories([laterInYear, older, firstInYear], history(null), 2026);
+    expect(result.firstRepositoryCreatedInYear).toMatchObject({
+      name: "spark",
+      ownerName: "isthatpratham",
+      createdAt: "2026-02-03T00:00:00.000Z",
+    });
+    expect(result.oldestActiveRepository?.name).toBe("legacy");
+  });
+
+  it("does not invent a first-in-year repository when none were created that year", () => {
+    const result = calculateRepositories(
+      [
+        repo({
+          name: "legacy",
+          ownerName: "isthatpratham",
+          starCount: 1,
+          url: "https://github.com/isthatpratham/legacy",
+          createdAt: "2019-04-01T00:00:00.000Z",
+        }),
+      ],
+      history(null),
+      2026,
+    );
+    expect(result.firstRepositoryCreatedInYear).toBeNull();
+  });
+
+  it("skips repositories without a usable creation date", () => {
+    const result = calculateRepositories(
+      [
+        repo({
+          name: "undated",
+          ownerName: "isthatpratham",
+          starCount: 0,
+          url: "https://github.com/isthatpratham/undated",
+          createdAt: "",
+        }),
+      ],
+      history(null),
+      2026,
+    );
+    expect(result.firstRepositoryCreatedInYear).toBeNull();
+  });
 });
