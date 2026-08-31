@@ -28,6 +28,8 @@ export type {
   AnalyticsProductivity,
   AnalyticsConsistency,
   AnalyticsActivity,
+  CommitMessageProfile,
+  AnalyticsExternalContributions,
   AnalyticsLanguages,
   AnalyticsRepositories,
   PeakDayRepositoryHighlight,

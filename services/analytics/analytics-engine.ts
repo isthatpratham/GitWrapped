@@ -9,6 +9,7 @@ import { calculateAchievements } from "./calculators/achievements";
 import { calculateTimeline } from "./calculators/timeline";
 import { calculateSummary } from "./calculators/summary";
 import { calculateOrganizations } from "./calculators/organizations";
+import { calculateExternalContributions } from "./calculators/external";
 import { createNormalizedScore } from "./analytics.utils";
 import { ANALYTICS_CONFIG } from "./analytics.constants";
 import { deriveAnalyticsAvailability, resolvedCollectionCount } from "./availability";
@@ -18,7 +19,7 @@ export function computeAnnualAnalytics(input: AnalyticsEngineInput): AnalyticsRe
   const { user, contributions, repositories, pullRequests, issues, organizations, commits, year } =
     input;
 
-  const repositoriesCalc = calculateRepositories(repositories, contributions);
+  const repositoriesCalc = calculateRepositories(repositories, contributions, year);
   const languageProfile = mapRepositoriesToLanguageProfile(repositories);
   const languagesCalc = calculateLanguages(languageProfile, repositories, year);
   const productivityCalc = calculateProductivity(contributions, year);
@@ -123,6 +124,13 @@ export function computeAnnualAnalytics(input: AnalyticsEngineInput): AnalyticsRe
     },
     timeline: timelineCalc,
     summary: summaryCalc,
+    externalContributions: calculateExternalContributions(
+      user.handle,
+      commits,
+      pullRequests,
+      issues,
+      contributions.repositoryActivity,
+    ),
     availability,
   };
 }

@@ -3,6 +3,7 @@ import { utcHour, utcWeekday } from "@/lib/time/utc";
 import type { AnalyticsActivity } from "@/services/analytics/analytics.types";
 import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
 import { createNormalizedScore } from "@/services/analytics/analytics.utils";
+import { analyzeCommitMessageProfile } from "./messages";
 
 function isDescriptiveCommitSummary(summary: string): boolean {
   const lowerMsg = summary.toLowerCase().trim();
@@ -177,6 +178,7 @@ export function calculateActivity(
           }
         : null,
       commitMessageQualityScore,
+      messageProfile: analyzeCommitMessageProfile(commits.map((commit) => commit.summary)),
     },
     pullRequests: {
       opened: prOpened + prMerged + prClosed,

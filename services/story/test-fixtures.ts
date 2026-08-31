@@ -96,6 +96,17 @@ export function baseAnalytics(overrides: Partial<AnalyticsResult> = {}): Analyti
         averageLinesPerCommit: 0,
         biggestCommit: null,
         commitMessageQualityScore: null,
+        messageProfile: {
+          sampleSize: 0,
+          feat: 0,
+          fix: 0,
+          refactor: 0,
+          docs: 0,
+          chore: 0,
+          update: 0,
+          final: 0,
+          topKeyword: null,
+        },
       },
       pullRequests: {
         opened: 0,
@@ -134,6 +145,7 @@ export function baseAnalytics(overrides: Partial<AnalyticsResult> = {}): Analyti
       mostActiveRepository: null,
       oldestActiveRepository: null,
       newestRepository: null,
+      firstRepositoryCreatedInYear: null,
       repositoryGrowthTimeline: [],
     },
     organizations: {
@@ -155,6 +167,13 @@ export function baseAnalytics(overrides: Partial<AnalyticsResult> = {}): Analyti
         globalRankPercentage: 1,
       },
       milestones: [],
+    },
+    externalContributions: {
+      pullRequestCount: 0,
+      commitCount: 0,
+      issueCount: 0,
+      uniqueRepositoryCount: 0,
+      featuredRepositoryPath: null,
     },
     availability: {
       contributions: availableMeasured(),
@@ -314,6 +333,12 @@ export function richAnalytics(): AnalyticsResult {
       mostActiveRepository: { name: "hello-world", commitCount: 210 },
       oldestActiveRepository: { name: "hello-world", ageDays: 4000 },
       newestRepository: { name: "new-app", createdAt: "2026-02-01T00:00:00.000Z" },
+      firstRepositoryCreatedInYear: {
+        name: "new-app",
+        ownerName: "octocat",
+        createdAt: "2026-02-01T00:00:00.000Z",
+        url: "https://github.com/octocat/new-app",
+      },
       repositoryGrowthTimeline: [],
     },
     organizations: {

@@ -147,6 +147,8 @@ export interface AnalyticsActivity {
       readonly authoredAt: string;
     } | null;
     readonly commitMessageQualityScore: number | null; // null when there are no commits to score
+    /** Counted conventional/keyword patterns only. Never stores raw commit messages. */
+    readonly messageProfile: CommitMessageProfile;
   };
   readonly pullRequests: {
     readonly opened: number;
@@ -181,6 +183,29 @@ export interface AnalyticsActivity {
     readonly weekdayActivity: number | null;
     readonly preferredCodingSession: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | null;
   };
+}
+
+export interface CommitMessageProfile {
+  readonly sampleSize: number;
+  readonly feat: number;
+  readonly fix: number;
+  readonly refactor: number;
+  readonly docs: number;
+  readonly chore: number;
+  readonly update: number;
+  readonly final: number;
+  readonly topKeyword: {
+    readonly word: string;
+    readonly count: number;
+  } | null;
+}
+
+export interface AnalyticsExternalContributions {
+  readonly pullRequestCount: number;
+  readonly commitCount: number;
+  readonly issueCount: number;
+  readonly uniqueRepositoryCount: number;
+  readonly featuredRepositoryPath: string | null;
 }
 
 export interface AnalyticsLanguages {
@@ -246,6 +271,16 @@ export interface AnalyticsRepositories {
   readonly newestRepository: {
     readonly name: string;
     readonly createdAt: string;
+  } | null;
+  /**
+   * Earliest repository the user created during the recap year.
+   * Not the oldest repository overall, and not the first contributed-to repo.
+   */
+  readonly firstRepositoryCreatedInYear: {
+    readonly name: string;
+    readonly ownerName: string;
+    readonly createdAt: string;
+    readonly url: string | null;
   } | null;
   readonly repositoryGrowthTimeline: ReadonlyArray<{
     readonly date: string;
@@ -362,5 +397,6 @@ export interface AnalyticsResult {
   readonly achievements: AnalyticsAchievements;
   readonly timeline: AnalyticsTimeline;
   readonly summary: AnalyticsSummary;
+  readonly externalContributions: AnalyticsExternalContributions;
   readonly availability: AnalyticsAvailability;
 }
