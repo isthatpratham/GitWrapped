@@ -14,6 +14,11 @@ export type InsightKind =
   | "repository-concentration"
   | "monthly-growth"
   | "comeback"
+  | "final-push"
+  | "contribution-milestone"
+  | "first-repository"
+  | "open-source"
+  | "commit-personality"
   | "activity-spike"
   | "developer-rhythm"
   | "achievements"
@@ -29,6 +34,11 @@ export type InsightFamily =
   | "most-starred"
   | "momentum"
   | "comeback"
+  | "final-push"
+  | "contribution-milestone"
+  | "first-repository"
+  | "open-source"
+  | "commit-voice"
   | "achievement"
   | "organization"
   | "rhythm"
@@ -112,6 +122,46 @@ export type InsightPayload =
       readonly quietDays: number;
       readonly reboundCount: number;
       readonly reboundStart: string;
+      readonly typicalWeekly: number;
+    }
+  | {
+      readonly kind: "final-push";
+      readonly windowStart: string;
+      readonly windowEnd: string;
+      readonly windowCount: number;
+      readonly restAverageDaily: number;
+      readonly windowAverageDaily: number;
+      readonly yearSharePercent: number;
+    }
+  | {
+      readonly kind: "contribution-milestone";
+      readonly threshold: number;
+      readonly crossedOn: string;
+      readonly total: number;
+    }
+  | {
+      readonly kind: "first-repository";
+      readonly name: string;
+      readonly ownerName: string;
+      readonly createdAt: string;
+      readonly url: string | null;
+      readonly ownedByUser: boolean;
+    }
+  | {
+      readonly kind: "open-source";
+      readonly pullRequestCount: number;
+      readonly commitCount: number;
+      readonly issueCount: number;
+      readonly uniqueRepositoryCount: number;
+      readonly featuredRepositoryPath: string | null;
+    }
+  | {
+      readonly kind: "commit-personality";
+      readonly archetype: "fixer" | "builder" | "refactorer" | "final-final" | "keyword";
+      readonly keyword: string;
+      readonly matchCount: number;
+      readonly sampleSize: number;
+      readonly sharePercent: number;
     }
   | {
       readonly kind: "activity-spike";

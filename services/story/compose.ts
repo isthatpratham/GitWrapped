@@ -130,8 +130,22 @@ function metadataFor(insight: RankedInsight, analytics: AnalyticsResult): Record
     case "monthly-growth":
       return { quarters: analytics.timeline.quarterly };
     case "comeback":
+    case "final-push":
+    case "contribution-milestone":
+    case "open-source":
+    case "commit-personality":
     case "developer-rhythm":
-      return { highlights: [insight.evidence[0]?.value ?? insight.payload.kind] };
+      return { highlights: insight.evidence.map((item) => `${item.label}: ${item.value}`) };
+    case "first-repository":
+      return {
+        firstRepository: {
+          name: payload.name,
+          ownerName: payload.ownerName,
+          starCount: null,
+          url: payload.url,
+          createdAt: payload.createdAt,
+        },
+      };
     case "achievements":
       return { achievementsList: payload.achievements };
     case "organizations":

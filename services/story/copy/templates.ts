@@ -116,11 +116,67 @@ export function copyForInsight(insight: StoryInsight, handle: string): StoryCopy
 
     case "comeback":
       return {
-        title: "Comeback",
+        title: "The Comeback",
         subtitle: formatCalendarDate(payload.reboundStart),
-        headline: `After ${payload.quietDays} quiet days, you shipped ${payload.reboundCount} contributions.`,
-        description: `The rebound week starting ${formatCalendarDate(payload.reboundStart)} broke a long inactive stretch on the contribution calendar.`,
+        headline: "You disappeared. Then you came back swinging.",
+        description: `${payload.quietDays} quiet days, then ${payload.reboundCount} contributions in the week starting ${formatCalendarDate(payload.reboundStart)}. That rebound sits against a typical week of ${payload.typicalWeekly} on the contribution calendar.`,
       };
+
+    case "final-push":
+      return {
+        title: "The Final Push",
+        subtitle: formatCalendarDate(payload.windowEnd),
+        headline: "You didn't quietly disappear at the finish line.",
+        description: `${payload.windowCount} contributions landed ${formatCalendarDate(payload.windowStart)}–${formatCalendarDate(payload.windowEnd)}, ${payload.yearSharePercent}% of the year and ${payload.windowAverageDaily} a day versus ${payload.restAverageDaily} earlier.`,
+      };
+
+    case "contribution-milestone":
+      return {
+        title: "Milestone",
+        subtitle: payload.threshold.toLocaleString(),
+        headline: `You crossed ${payload.threshold.toLocaleString()}.`,
+        description: `The contribution calendar first reached ${payload.threshold.toLocaleString()} on ${formatCalendarDate(payload.crossedOn)}. Year total: ${payload.total.toLocaleString()}.`,
+      };
+
+    case "first-repository":
+      return {
+        title: "First Repository",
+        subtitle: `${payload.ownerName}/${payload.name}`,
+        headline: "Your year started with an idea.",
+        description: payload.ownedByUser
+          ? `${payload.ownerName}/${payload.name} was created ${formatCalendarDate(payload.createdAt.slice(0, 10))}. That is repository creation date, not a claim about how much you committed there.`
+          : `${payload.ownerName}/${payload.name} appeared ${formatCalendarDate(payload.createdAt.slice(0, 10))}. Creation date is available; this does not establish that you built every line.`,
+      };
+
+    case "open-source":
+      return {
+        title: "Open Source",
+        subtitle: payload.featuredRepositoryPath,
+        headline: "You didn't just build your own stuff.",
+        description: [
+          `${payload.pullRequestCount} pull requests and ${payload.commitCount} commits reached ${payload.uniqueRepositoryCount} repositor${payload.uniqueRepositoryCount === 1 ? "y" : "ies"} you don't own.`,
+          payload.featuredRepositoryPath ? `Most of that external signal pointed at ${payload.featuredRepositoryPath}.` : null,
+          "That measures activity outside your handle, not that you created those projects.",
+        ]
+          .filter((part): part is string => Boolean(part))
+          .join(" "),
+      };
+
+    case "commit-personality": {
+      const headlines: Record<typeof payload.archetype, string> = {
+        fixer: "A lot of the year's commits were about fixing.",
+        builder: "feat showed up so often it became a pattern.",
+        refactorer: "Refactor kept turning up in the commit log.",
+        "final-final": "The Final Final Engineer clocked in.",
+        keyword: `"${payload.keyword}" kept turning up in commit summaries.`,
+      };
+      return {
+        title: "Commit Voice",
+        subtitle: payload.keyword,
+        headline: headlines[payload.archetype],
+        description: `${payload.matchCount} of ${payload.sampleSize} counted commit summaries matched “${payload.keyword}” (${payload.sharePercent}%). This is a word pattern, not a personality diagnosis, and full messages stay off the slide.`,
+      };
+    }
 
     case "activity-spike":
       return {

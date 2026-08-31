@@ -28,6 +28,9 @@ export function selectRepositoryCard(metadata: Record<string, unknown>): SlideRe
   if ("mostStarredRepository" in metadata) {
     return preview(metadata.mostStarredRepository);
   }
+  if ("firstRepository" in metadata) {
+    return preview(metadata.firstRepository);
+  }
   if ("mostActiveRepository" in metadata) {
     return preview(metadata.mostActiveRepository);
   }

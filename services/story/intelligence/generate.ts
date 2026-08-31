@@ -4,6 +4,13 @@ import { STORY_INTELLIGENCE } from "./constants";
 import { deriveStoryAchievements } from "./achievements";
 import { classifyDeveloperRhythm } from "./rhythm";
 import {
+  detectCommitPersonality,
+  detectContributionMilestone,
+  detectFinalPush,
+  detectFirstRepository,
+  detectOpenSourceChapter,
+} from "./additional-signals";
+import {
   clampScore,
   detectActivitySpike,
   detectComeback,
@@ -407,8 +414,141 @@ export function generateStoryInsights(analytics: AnalyticsResult): readonly Stor
         evidence: [
           { label: "Quiet stretch", value: `${comeback.quietDays} days` },
           { label: "Rebound week", value: String(comeback.reboundCount) },
+          { label: "Typical week", value: String(comeback.typicalWeekly) },
         ],
         payload: { kind: "comeback", ...comeback },
+      }),
+    );
+  }
+
+  const finalPush = detectFinalPush(analytics);
+  if (finalPush) {
+    insights.push(
+      insight({
+        id: "final-push",
+        kind: "final-push",
+        family: "final-push",
+        chapter: "MILESTONES",
+        slideType: "Highlights",
+        availability: analytics.availability.contributions,
+        strength: clampScore(30 + finalPush.yearSharePercent),
+        uniqueness: clampScore(finalPush.windowAverageDaily * 8),
+        narrativeValue: 80,
+        surprise: 45,
+        shareable: true,
+        heroValue: finalPush.windowCount,
+        evidence: [
+          { label: "Final window", value: `${formatCalendarDate(finalPush.windowStart)}–${formatCalendarDate(finalPush.windowEnd)}` },
+          { label: "Contributions", value: String(finalPush.windowCount) },
+          { label: "Share of year", value: `${finalPush.yearSharePercent}%` },
+        ],
+        payload: { kind: "final-push", ...finalPush },
+      }),
+    );
+  }
+
+  const milestone = detectContributionMilestone(analytics);
+  if (milestone) {
+    insights.push(
+      insight({
+        id: "contribution-milestone",
+        kind: "contribution-milestone",
+        family: "contribution-milestone",
+        chapter: "YOUR_YEAR",
+        slideType: "Highlights",
+        availability: analytics.availability.contributions,
+        strength: clampScore(40 + Math.log10(milestone.threshold) * 20),
+        uniqueness: clampScore(milestone.threshold / 20),
+        narrativeValue: 82,
+        surprise: milestone.threshold >= 1000 ? 40 : 15,
+        shareable: true,
+        heroValue: milestone.threshold,
+        evidence: [
+          { label: "Threshold", value: milestone.threshold.toLocaleString() },
+          { label: "Crossed", value: formatCalendarDate(milestone.crossedOn) },
+        ],
+        payload: { kind: "contribution-milestone", ...milestone },
+      }),
+    );
+  }
+
+  const firstRepository = detectFirstRepository(analytics);
+  if (firstRepository) {
+    insights.push(
+      insight({
+        id: "first-repository",
+        kind: "first-repository",
+        family: "first-repository",
+        chapter: "OPENING",
+        slideType: "Repositories",
+        availability: analytics.availability.repositories,
+        strength: 58,
+        uniqueness: 60,
+        narrativeValue: 74,
+        surprise: 20,
+        shareable: true,
+        heroValue: `${firstRepository.ownerName}/${firstRepository.name}`,
+        evidence: [
+          { label: "Repository", value: `${firstRepository.ownerName}/${firstRepository.name}` },
+          { label: "Created", value: formatCalendarDate(firstRepository.createdAt.slice(0, 10)) },
+        ],
+        payload: { kind: "first-repository", ...firstRepository },
+      }),
+    );
+  }
+
+  const openSource = detectOpenSourceChapter(analytics);
+  if (openSource) {
+    insights.push(
+      insight({
+        id: "open-source",
+        kind: "open-source",
+        family: "open-source",
+        chapter: "YOUR_BUILD",
+        slideType: "Highlights",
+        availability: isAvailable(analytics.availability.pullRequests)
+          ? analytics.availability.pullRequests
+          : analytics.availability.contributions,
+        strength: clampScore(35 + openSource.pullRequestCount * 4 + openSource.commitCount),
+        uniqueness: clampScore(20 + openSource.uniqueRepositoryCount * 10),
+        narrativeValue: 76,
+        surprise: 25,
+        shareable: true,
+        heroValue: openSource.uniqueRepositoryCount,
+        evidence: [
+          { label: "External repositories", value: String(openSource.uniqueRepositoryCount) },
+          { label: "Pull requests", value: String(openSource.pullRequestCount) },
+          { label: "Commits", value: String(openSource.commitCount) },
+        ],
+        payload: { kind: "open-source", ...openSource },
+      }),
+    );
+  }
+
+  const personality = detectCommitPersonality(analytics);
+  if (personality) {
+    insights.push(
+      insight({
+        id: "commit-personality",
+        kind: "commit-personality",
+        family: "commit-voice",
+        chapter: "YOUR_RHYTHM",
+        slideType: "Highlights",
+        availability: analytics.availability.commitTimestamps.status === "available"
+          ? analytics.availability.commitTimestamps
+          : analytics.availability.contributions,
+        strength: clampScore(personality.sharePercent),
+        uniqueness: clampScore(personality.sharePercent),
+        narrativeValue: 70,
+        surprise: personality.archetype === "final-final" ? 55 : 20,
+        shareable: true,
+        heroValue: personality.keyword,
+        evidence: [
+          { label: "Pattern", value: personality.keyword },
+          { label: "Share", value: `${personality.sharePercent}%` },
+          { label: "Messages counted", value: String(personality.sampleSize) },
+        ],
+        payload: { kind: "commit-personality", ...personality },
       }),
     );
   }

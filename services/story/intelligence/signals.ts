@@ -33,6 +33,7 @@ export interface ComebackSignal {
   readonly quietDays: number;
   readonly reboundCount: number;
   readonly reboundStart: string;
+  readonly typicalWeekly: number;
 }
 
 export function detectComeback(analytics: AnalyticsResult): ComebackSignal | null {
@@ -73,6 +74,7 @@ export function detectComeback(analytics: AnalyticsResult): ComebackSignal | nul
           quietDays: quietRun,
           reboundCount,
           reboundStart: day.date,
+          typicalWeekly: parseFloat(averageWeekly.toFixed(1)),
         };
       }
     }

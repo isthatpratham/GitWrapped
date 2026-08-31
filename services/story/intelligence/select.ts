@@ -27,14 +27,17 @@ export function selectStoryInsights(analytics: AnalyticsResult): readonly Ranked
   const ranked = rankStoryInsights(generated);
   const unique = collapseRedundantInsights(ranked);
 
+  const opening = unique.filter((insight) => insight.chapter === "OPENING");
   const structural = unique.filter((insight) => insight.kind === "contribution-total");
-  const body = unique.filter((insight) => insight.kind !== "contribution-total");
+  const body = unique.filter(
+    (insight) => insight.kind !== "contribution-total" && insight.chapter !== "OPENING",
+  );
 
-  const reserved = 2 + structural.length; // Welcome + Closing + Overview
+  const reserved = 2 + structural.length + opening.length;
   const bodyLimit = Math.max(0, STORY_INTELLIGENCE.maxSlides - reserved);
   const selectedBody = preferChapterDiversity(body, bodyLimit);
 
-  return [...structural, ...selectedBody];
+  return [...opening, ...structural, ...selectedBody];
 }
 
 export function buildStoryIntelligence(analytics: AnalyticsResult) {
