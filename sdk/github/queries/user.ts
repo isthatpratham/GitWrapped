@@ -34,6 +34,7 @@
 export const GET_USER_PROFILE = /* GraphQL */ `
   query GetUserProfile($login: String!) {
     user(login: $login) {
+      id
       login
       name
       avatarUrl
@@ -72,6 +73,7 @@ export interface GetUserProfileVariables {
  */
 export interface GetUserProfileData {
   readonly user: {
+    readonly id: string;
     readonly login: string;
     readonly name: string | null;
     readonly avatarUrl: string;

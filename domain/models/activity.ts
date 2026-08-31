@@ -153,7 +153,7 @@ export interface Commit {
   readonly summary: string;
   /** Full commit message body. */
   readonly fullMessage: string;
-  /** ISO 8601 timestamp when this commit was authored. */
+  /** ISO 8601 timestamp when this commit was authored (UTC). */
   readonly authoredAt: string;
   /** Number of lines added. */
   readonly linesAdded: number;
@@ -164,4 +164,6 @@ export interface Commit {
    * Null for very large commits where GitHub does not compute this value.
    */
   readonly changedFileCount: number | null;
+  /** Full repository path, e.g. "vercel/next.js". */
+  readonly repositoryPath: string;
 }

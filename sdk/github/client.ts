@@ -1,13 +1,15 @@
+import "server-only";
+
 import { githubConfig } from "./config";
 import {
   GitHubAuthenticationError,
   GitHubForbiddenError,
-  GitHubGraphQLError,
   GitHubHttpError,
   GitHubNetworkError,
   GitHubRateLimitError,
   GitHubTimeoutError,
 } from "./errors";
+import { resolveGraphQLPayload } from "./graphql-response";
 import type { GraphQLRequestOptions, GraphQLResponse } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -110,7 +112,7 @@ async function mapHttpErrorResponse(
  * @throws {GitHubForbiddenError} On HTTP 403.
  * @throws {GitHubRateLimitError} On HTTP 429.
  * @throws {GitHubHttpError} On any other non-2xx HTTP status.
- * @throws {GitHubGraphQLError} When the response body contains a GraphQL `errors` array.
+ * @throws {GitHubGraphQLError} When the response has GraphQL errors and no data.
  */
 export async function executeQuery<TData>(
   options: GraphQLRequestOptions,
@@ -164,19 +166,5 @@ export async function executeQuery<TData>(
     throw new GitHubNetworkError(endpoint);
   }
 
-  // GraphQL errors are returned with HTTP 200 but contain an `errors` array.
-  // We always check for these before returning data.
-  if (Array.isArray(body.errors) && body.errors.length > 0) {
-    throw new GitHubGraphQLError(body.errors, operationName);
-  }
-
-  // If neither errors nor data is present, the response is malformed.
-  if (body.data === undefined || body.data === null) {
-    throw new GitHubGraphQLError(
-      [{ message: "Response contained no `data` field and no `errors` field." }],
-      operationName,
-    );
-  }
-
-  return body.data;
+  return resolveGraphQLPayload(body, operationName);
 }

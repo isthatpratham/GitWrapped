@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { animate } from "framer-motion";
+import { animate, useReducedMotion } from "framer-motion";
 
 interface CounterProps {
   readonly value: number;
@@ -21,10 +21,15 @@ export function Counter({
   format = defaultFormat,
 }: CounterProps) {
   const nodeRef = useRef<HTMLSpanElement>(null);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const node = nodeRef.current;
     if (!node) return;
+    if (reduced) {
+      node.textContent = format(value);
+      return;
+    }
 
     // Wait for the specified delay before starting animation
     const timeout = setTimeout(() => {
@@ -40,7 +45,7 @@ export function Counter({
     }, delay * 1000);
 
     return () => clearTimeout(timeout);
-  }, [value, delay, duration, format]);
+  }, [value, delay, duration, format, reduced]);
 
   return <span ref={nodeRef} className={className}>0</span>;
 }

@@ -115,6 +115,14 @@ GitWrapped/
 
 The architecture is designed for long-term maintainability and future expansion.
 
+Where the current implementation lives:
+
+- GitHub integration: `sdk/github/` (called from the server action in `app/actions/wrapped.ts`)
+- Analytics: `services/analytics/`
+- Story Intelligence and composition: `services/story/`
+- Story Player: `components/player/` and `lib/player/`
+- Tests: colocated `*.test.ts` files next to the code they cover
+
 ---
 
 ## Roadmap

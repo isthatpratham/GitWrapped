@@ -1,3 +1,7 @@
+/**
+ * Isolated mock generator. Do not import from production runtime paths
+ * (`fetchAnnualData`, server actions, or the SDK public barrel).
+ */
 import type {
   GitHubAnnualData,
   GitHubUserProfile,
@@ -36,8 +40,15 @@ class SeededRandom {
 
   // Pick random element
   pick<T>(arr: readonly T[]): T {
+    if (arr.length === 0) {
+      throw new Error("Cannot pick from an empty array");
+    }
     const idx = this.nextInt(0, arr.length - 1);
-    return arr[idx]!;
+    const item = arr[idx];
+    if (item === undefined) {
+      throw new Error("SeededRandom.pick: index out of range");
+    }
+    return item;
   }
 }
 
@@ -50,6 +61,7 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
 
   // 1. User profile
   const user: GitHubUserProfile = {
+    id: `mock-user-${username}`,
     login: username,
     name: username.charAt(0).toUpperCase() + username.slice(1) + " Coder",
     avatarUrl: `https://avatars.githubusercontent.com/u/${rand.nextInt(1000000, 9999999)}?v=4`,
@@ -208,7 +220,7 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
   ];
 
   // 6. Contributions Calendar
-  const weeks: { firstDay: string; contributionDays: any[] }[] = [];
+  const weeks: ContributionCollection["contributionCalendar"]["weeks"][number][] = [];
   let currentDay = new Date(year, 0, 1);
   // Find preceding Sunday to align calendar weeks
   while (currentDay.getDay() !== 0) {
@@ -216,17 +228,17 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
   }
 
   let totalCalendarContributions = 0;
-  const commitContributionsByRepository: any[] = [];
+  const commitContributionsByRepository: ContributionCollection["repositoryActivity"][number][] =
+    [];
   let peakDayCommitCount = 0;
   let peakDayOccurredAt = "";
-  let peakDayRepoName = "";
 
   for (let w = 0; w < 53; w++) {
-    const weekDays: any[] = [];
-    const firstDay = currentDay.toISOString().split("T")[0]!;
+    const weekDays: ContributionCollection["contributionCalendar"]["weeks"][number]["contributionDays"][number][] = [];
+    const firstDay = currentDay.toISOString().slice(0, 10);
 
     for (let d = 0; d < 7; d++) {
-      const dateStr = currentDay.toISOString().split("T")[0]!;
+      const dateStr = currentDay.toISOString().slice(0, 10);
       const isCurrentYear = currentDay.getFullYear() === year;
 
       // Seed higher probability of coding on weekdays and certain months (like Oct/Nov)
@@ -265,7 +277,6 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
       if (count > peakDayCommitCount) {
         peakDayCommitCount = count;
         peakDayOccurredAt = dateStr;
-        peakDayRepoName = repositories[0]?.nameWithOwner ?? `${username}/react-hooks`;
       }
 
       currentDay = new Date(currentDay.getTime() + 86400000);
@@ -280,13 +291,11 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
   // Seed repositoryActivity commit breakdown
   for (const repo of repositories) {
     commitContributionsByRepository.push({
-      repository: {
-        nameWithOwner: repo.nameWithOwner,
-        primaryLanguage: repo.primaryLanguage,
-      },
-      contributions: {
-        totalCount: rand.nextInt(10, 180),
-      },
+      repositoryPath: repo.nameWithOwner,
+      commitCount: rand.nextInt(10, 180),
+      primaryLanguage: repo.primaryLanguage
+        ? { name: repo.primaryLanguage.name, color: repo.primaryLanguage.color }
+        : null,
     });
   }
 
@@ -301,21 +310,14 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
     totalPullRequestReviewContributions: rand.nextInt(2, 20),
     totalRepositoriesWithContributedCommits: repositories.length,
     restrictedContributionsCount: Math.floor(totalCalendarContributions * 0.15),
-    repositoryActivity: commitContributionsByRepository.map((item) => ({
-      repositoryPath: item.repository.nameWithOwner,
-      commitCount: item.contributions.totalCount,
-      primaryLanguage: item.repository.primaryLanguage
-        ? {
-            name: item.repository.primaryLanguage.name,
-            color: item.repository.primaryLanguage.color,
-          }
-        : null,
-    })),
-    peakDay: {
-      date: peakDayOccurredAt,
-      commitCount: peakDayCommitCount,
-      repositoryPath: peakDayRepoName,
-    },
+    repositoryActivity: commitContributionsByRepository,
+    peakDay: peakDayOccurredAt
+      ? {
+          date: peakDayOccurredAt,
+          commitCount: peakDayCommitCount,
+          repositoryPath: null,
+        }
+      : null,
   };
 
   return {
@@ -325,6 +327,14 @@ export function generateMockAnnualData(username: string, year: number): GitHubAn
     pullRequests,
     issues,
     organizations,
+    commits: [],
+    sources: {
+      pullRequests: { status: "fetched" },
+      issues: { status: "fetched" },
+      organizations: { status: "fetched" },
+      commits: { status: "unavailable", reason: "not_fetched" },
+      repositories: { status: "fetched" },
+    },
     achievementSignals: {
       login: user.login,
       followers: user.followers,

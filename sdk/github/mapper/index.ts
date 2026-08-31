@@ -11,8 +11,6 @@ export { mapGitHubRepositoryToRepository } from "./repository.mapper";
 
 export { mapGitHubContributionsToContributionHistory } from "./contribution.mapper";
 
-export { mapGitHubRepositoriesToLanguageProfile } from "./language.mapper";
-
 export { mapGitHubOrganizationToOrganization } from "./organization.mapper";
 
 export {

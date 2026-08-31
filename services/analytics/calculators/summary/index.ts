@@ -95,7 +95,7 @@ export function calculateSummary(inputs: SummaryInputs): AnalyticsSummary {
   // Share Stats
   const shareStatistics = {
     formattedTotalContributions: totalContributions.toLocaleString(),
-    topLanguageName: favoriteLanguageName ?? "Code",
+    topLanguageName: favoriteLanguageName,
     longestStreakDays: longestStreak,
     globalRankPercentage: Math.max(1, 100 - Math.min(99, Math.floor((totalContributions / 1000) * 100))), // simple mock rank
   };

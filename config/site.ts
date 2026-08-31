@@ -1,29 +1,27 @@
+import "server-only";
+
 import { z } from "zod";
 
-// Zod Schema to validate environment variables
+// Public site URL only. GitHub credentials live in sdk/github/config.ts
+// (server-only) and must never be imported from this module on the client.
 const envSchema = z.object({
-  GITHUB_CLIENT_ID: z.string().min(1, "GitHub Client ID is required"),
-  GITHUB_CLIENT_SECRET: z.string().min(1, "GitHub Client Secret is required"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
 });
 
-// Environment variable validation helper
 const validateEnv = () => {
   const parsed = envSchema.safeParse({
-    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
-    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL,
   });
 
   if (!parsed.success) {
-    console.error("❌ Invalid environment variables:", parsed.error.format());
-    // In production, we fail-fast. In development, we warn.
+    const issueSummary = parsed.error.issues
+      .map((issue) => `${issue.path.join(".") || "env"}:${issue.code}`)
+      .join(", ");
+    console.error(`Invalid public environment configuration (${issueSummary}).`);
     if (process.env.NODE_ENV === "production") {
       throw new Error("Invalid environment variables");
     }
     return {
-      GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID || "",
-      GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET || "",
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
     };
   }
@@ -31,7 +29,7 @@ const validateEnv = () => {
   return parsed.data;
 };
 
-export const env = validateEnv();
+const env = validateEnv();
 
 export const siteConfig = {
   name: "GitWrapped",

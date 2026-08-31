@@ -10,8 +10,10 @@
 // Design principle:
 // - Every field here represents a COMPUTED insight, not raw data.
 // - Raw data lives in domain/models/{user,repository,contribution,...}.ts
-// - The Analytics Engine takes raw domain models as input and produces
-//   the interfaces in this file as output.
+// - The live Analytics Engine snapshot consumed by the Story Engine is
+//   `AnalyticsResult` in `services/analytics/analytics.types.ts`.
+//   `AnnualAnalytics` below is a legacy shape retained for type reuse
+//   (streaks, language entries). Do not add new consumers of it.
 // ---------------------------------------------------------------------------
 
 import type { LanguageUsage } from "./language";

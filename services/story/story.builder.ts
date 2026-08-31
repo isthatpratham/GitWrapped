@@ -6,15 +6,16 @@
 // ---------------------------------------------------------------------------
 
 import type { AnalyticsResult } from "@/services/analytics";
-import type { StorySlide, StoryTheme, MotionPreset, SlideTransition } from "./story.types";
+import type { StorySlide, StorySlideType } from "./story.types";
 import { STORY_CONFIG } from "./story.constants";
+import { availableMeasured } from "@/domain/models";
 
 /**
  * Common layout generator for constructing a Slide object.
  */
 function createSlide(params: {
   readonly id: string;
-  readonly type: string;
+  readonly type: StorySlideType;
   readonly title: string;
   readonly subtitle: string | null;
   readonly headline: string;
@@ -25,18 +26,20 @@ function createSlide(params: {
   readonly metadata: Record<string, unknown>;
 }): StorySlide {
   const type = params.type;
-  const theme = STORY_CONFIG.themes[type] ?? ("minimal" as StoryTheme);
-  const motion = STORY_CONFIG.motion[type] ?? ("fadeUp" as MotionPreset);
-  const transition = STORY_CONFIG.transitions[type] ?? ("slide" as SlideTransition);
+  const theme = STORY_CONFIG.themes[type] ?? "minimal";
+  const motion = STORY_CONFIG.motion[type] ?? "fadeUp";
+  const transition = STORY_CONFIG.transitions[type] ?? "slide";
   const priority = STORY_CONFIG.priorities[type] ?? 100;
 
   return {
     id: params.id,
     type,
+    chapter: "YOUR_YEAR",
     title: params.title,
     subtitle: params.subtitle,
     headline: params.headline,
     description: params.description,
+    heroValue: null,
     icon: params.icon,
     priority,
     duration: STORY_CONFIG.defaultDurationMs,
@@ -44,6 +47,9 @@ function createSlide(params: {
     motion,
     transition,
     analyticsReference: params.analyticsReference,
+    insightId: null,
+    availability: availableMeasured(),
+    evidence: [],
     shareable: params.shareable,
     metadata: params.metadata,
   };
@@ -56,7 +62,9 @@ export const StoryBuilders = {
       type: "Welcome",
       title: "Welcome",
       subtitle: `Your Year in Code`,
-      headline: `Hey ${analytics.summary.shareStatistics.topLanguageName} Dev, let's look back at ${analytics.year}.`,
+      headline: analytics.summary.shareStatistics.topLanguageName
+        ? `Hey ${analytics.summary.shareStatistics.topLanguageName} Dev, let's look back at ${analytics.year}.`
+        : `Hey ${analytics.user.displayName ?? analytics.user.handle}, let's look back at ${analytics.year}.`,
       description: "Welcome to your GitWrapped annual recap. Get ready to scroll through your coding journey.",
       icon: "wave",
       analyticsReference: "user",
@@ -125,19 +133,29 @@ export const StoryBuilders = {
   },
 
   buildProductivity: (analytics: AnalyticsResult): StorySlide => {
+    const time = analytics.activity.timeAnalysis;
+    const session = time.preferredCodingSession;
+    const hour = time.mostActiveHour;
+    const nightOwl = time.nightOwlScore;
+
     return createSlide({
       id: "productivity-slide",
       type: "Productivity",
       title: "Peak Productivity",
       subtitle: "Coding Schedule Analysis",
-      headline: `Your favorite session is the ${analytics.activity.timeAnalysis.preferredCodingSession} window.`,
-      description: `You committed most at ${analytics.activity.timeAnalysis.mostActiveHour}:00 UTC. Night Owl Score is ${analytics.activity.timeAnalysis.nightOwlScore.percentage}%.`,
+      headline: session
+        ? `Your favorite session is the ${session} window.`
+        : "Hour-of-day coding patterns need real commit timestamps.",
+      description:
+        hour !== null && nightOwl
+          ? `You committed most at ${hour}:00 UTC. Night Owl Score is ${nightOwl.percentage}%.`
+          : "GitHub did not provide enough commit timestamps to measure coding hours for this recap.",
       icon: "clock",
       analyticsReference: "activity.timeAnalysis",
       shareable: true,
       metadata: {
-        preferredSession: analytics.activity.timeAnalysis.preferredCodingSession,
-        mostActiveHour: analytics.activity.timeAnalysis.mostActiveHour,
+        preferredSession: session,
+        mostActiveHour: hour,
       },
     });
   },

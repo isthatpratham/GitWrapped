@@ -167,6 +167,13 @@ export class GitHubGraphQLError extends GitHubSDKError {
 // Domain errors
 // ---------------------------------------------------------------------------
 
+export class GitHubInvalidUsernameError extends GitHubSDKError {
+  constructor(public readonly username: string) {
+    super("The provided GitHub username is invalid.");
+    this.name = "GitHubInvalidUsernameError";
+  }
+}
+
 /**
  * Thrown when a GitHub user is not found (GraphQL returns null for the user node).
  */

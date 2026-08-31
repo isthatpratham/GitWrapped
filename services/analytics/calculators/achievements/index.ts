@@ -7,6 +7,7 @@
 
 import type { AnalyticsEngineInput, AnalyticsAchievement } from "@/services/analytics/analytics.types";
 import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
+import { utcHour, utcWeekday, isCalendarDateInYear } from "@/lib/time/utc";
 
 interface AchievementRule {
   readonly id: string;
@@ -24,7 +25,8 @@ const ACHIEVEMENT_RULES: readonly AchievementRule[] = [
     tier: "BRONZE",
     evaluate: (input) => {
       const nightOwlCount = input.commits.filter((c) => {
-        const hour = new Date(c.authoredAt).getHours();
+        const hour = utcHour(c.authoredAt);
+        if (hour === null) return false;
         return hour >= ANALYTICS_CONFIG.time.nightStartHour || hour < ANALYTICS_CONFIG.time.nightEndHour;
       }).length;
       return nightOwlCount >= ANALYTICS_CONFIG.achievements.nightOwlCommitCount;
@@ -37,7 +39,8 @@ const ACHIEVEMENT_RULES: readonly AchievementRule[] = [
     tier: "BRONZE",
     evaluate: (input) => {
       const weekendCount = input.commits.filter((c) => {
-        const day = new Date(c.authoredAt).getDay();
+        const day = utcWeekday(c.authoredAt);
+        if (day === null) return false;
         return ANALYTICS_CONFIG.time.weekendDays.includes(day);
       }).length;
       return weekendCount >= ANALYTICS_CONFIG.achievements.weekendWarriorCommitCount;
@@ -50,7 +53,9 @@ const ACHIEVEMENT_RULES: readonly AchievementRule[] = [
     tier: "GOLD",
     evaluate: (input) => {
       // Inline streak calculator to remain independent of other calculators
-      const days = input.contributions.calendar.weeks.flatMap((w) => w.days);
+      const days = input.contributions.calendar.weeks
+        .flatMap((w) => w.days)
+        .filter((d) => isCalendarDateInYear(d.date, input.year));
       let longestStreak = 0;
       let tempStreak = 0;
       for (const d of days) {
@@ -97,7 +102,7 @@ const ACHIEVEMENT_RULES: readonly AchievementRule[] = [
     evaluate: (input) => {
       const activeDays = input.contributions.calendar.weeks
         .flatMap((w) => w.days)
-        .filter((d) => d.count > 0).length;
+        .filter((d) => isCalendarDateInYear(d.date, input.year) && d.count > 0).length;
       return activeDays >= ANALYTICS_CONFIG.achievements.consistencyChampionActiveDays;
     },
   },

@@ -7,6 +7,10 @@
 // IMPORTANT: This file defines SHAPES only — no rendering logic here.
 // Rendering is the UI layer's responsibility.
 //
+// The live Story Engine snapshot consumed by the player is `Story`
+// from `@/services/story`. This file is a leftover sketch and is not
+// the canonical contract.
+//
 // Design principle:
 // - Every slide type has exactly one `kind` discriminant.
 // - No slide carries derived data — the Story Engine resolves all that.

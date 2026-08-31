@@ -3,6 +3,7 @@ import { z } from "zod";
 import { executeQuery } from "../client";
 import { githubConfig } from "../config";
 import { GitHubResponseValidationError, GitHubUserNotFoundError } from "../errors";
+import { isoTimestampSchema } from "../schemas/primitives";
 import type { GitHubRepository } from "../types";
 import {
   GET_USER_REPOSITORIES,
@@ -24,9 +25,9 @@ const repositorySchema = z.object({
   name: z.string().min(1),
   nameWithOwner: z.string(),
   description: z.string().nullable(),
-  createdAt: z.string().datetime(),
-  pushedAt: z.string().datetime().nullable(),
-  updatedAt: z.string().datetime(),
+  createdAt: isoTimestampSchema,
+  pushedAt: isoTimestampSchema.nullable(),
+  updatedAt: isoTimestampSchema,
   stargazerCount: z.number().int().nonnegative(),
   forkCount: z.number().int().nonnegative(),
   isPrivate: z.boolean(),
@@ -73,43 +74,9 @@ const repositoriesPageSchema = z.object({
 // We use an explicit interface rather than a conditional type extraction
 // to avoid TypeScript resolving to `never` on deep generic inference.
 
-interface RawRepository {
-  readonly id: string;
-  readonly name: string;
-  readonly nameWithOwner: string;
-  readonly description: string | null;
-  readonly createdAt: string;
-  readonly pushedAt: string | null;
-  readonly updatedAt: string;
-  readonly stargazerCount: number;
-  readonly forkCount: number;
-  readonly isPrivate: boolean;
-  readonly isFork: boolean;
-  readonly isArchived: boolean;
-  readonly diskUsage: number | null;
-  readonly url: string;
-  readonly primaryLanguage: { readonly name: string; readonly color: string | null } | null;
-  readonly languages: {
-    readonly totalSize: number;
-    readonly edges: ReadonlyArray<{
-      readonly size: number;
-      readonly node: { readonly name: string; readonly color: string | null };
-    }>;
-  };
-  readonly watchers: { readonly totalCount: number };
-  readonly openIssues: { readonly totalCount: number };
-  readonly openPullRequests: { readonly totalCount: number };
-  readonly defaultBranchRef: { readonly name: string } | null;
-  readonly homepageUrl: string | null;
-  readonly visibility: string;
-  readonly repositoryTopics: {
-    readonly nodes: ReadonlyArray<{
-      readonly topic: { readonly name: string };
-    }>;
-  };
-}
+type ValidatedRepository = z.infer<typeof repositorySchema>;
 
-function normaliseRepository(raw: RawRepository): GitHubRepository {
+function normaliseRepository(raw: ValidatedRepository): GitHubRepository {
   return {
     id: raw.id,
     name: raw.name,
@@ -188,11 +155,13 @@ async function fetchAllRepositoryPages(
       throw new GitHubResponseValidationError("GetUserRepositories", pageValidation.error);
     }
 
-    const normalisedNodes = reposPage.nodes.map((node) => normaliseRepository(node as RawRepository));
+    const normalisedNodes = pageValidation.data.nodes.map((node) =>
+      normaliseRepository(node),
+    );
     repositories.push(...normalisedNodes);
 
-    hasNextPage = reposPage.pageInfo.hasNextPage;
-    cursor = reposPage.pageInfo.endCursor ?? undefined;
+    hasNextPage = pageValidation.data.pageInfo.hasNextPage;
+    cursor = pageValidation.data.pageInfo.endCursor ?? undefined;
   }
 
   return repositories;

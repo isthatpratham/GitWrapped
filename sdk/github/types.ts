@@ -50,6 +50,11 @@ export interface GraphQLRequestOptions {
  * Matches the GraphQL `User` object fields we query.
  */
 export interface GitHubUserProfile {
+  /**
+   * GraphQL node ID. Required to filter repository commit history by author.
+   * This is not a secret; it is a public identifier.
+   */
+  readonly id: string;
   /** GitHub handle, e.g. "torvalds". */
   readonly login: string;
   /** Display name. May be null if the user hasn't set one. */
@@ -330,7 +335,7 @@ export interface GitHubCommit {
   readonly messageHeadline: string;
   /** Full commit message including body. */
   readonly message: string;
-  /** ISO 8601 timestamp when the commit was authored. */
+  /** ISO 8601 timestamp when the commit was committed (UTC). */
   readonly committedDate: string;
   /** Number of lines added. */
   readonly additions: number;
@@ -341,6 +346,8 @@ export interface GitHubCommit {
    * May be null for very large commits.
    */
   readonly changedFiles: number | null;
+  /** Full repository path, e.g. "vercel/next.js". */
+  readonly repositoryPath: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -421,6 +428,20 @@ export interface GitHubRateLimit {
  * New fields added here must reflect raw API data only.
  * Computed values (streaks, percentages, rankings) belong in the Analytics Engine.
  */
+export type GitHubDataSourceStatus =
+  | { readonly status: "fetched" }
+  | { readonly status: "partial"; readonly reason: string }
+  | { readonly status: "unavailable"; readonly reason: string };
+
+/**
+ * The complete raw data payload returned by the GitHub service
+ * for a user's annual recap. This is the contract between the SDK
+ * and the Analytics Engine — it must never include computed values.
+ *
+ * `sources` records whether optional collections were actually fetched.
+ * An empty array with `status: "fetched"` means zero items.
+ * An empty array with `status: "unavailable"` means the list was not retrieved.
+ */
 export interface GitHubAnnualData {
   readonly user: GitHubUserProfile;
   readonly contributions: ContributionCollection;
@@ -428,7 +449,15 @@ export interface GitHubAnnualData {
   readonly pullRequests: ReadonlyArray<GitHubPullRequest>;
   readonly issues: ReadonlyArray<GitHubIssue>;
   readonly organizations: ReadonlyArray<GitHubOrganization>;
+  readonly commits: ReadonlyArray<GitHubCommit>;
   readonly achievementSignals: GitHubAchievementSignals;
+  readonly sources: {
+    readonly pullRequests: GitHubDataSourceStatus;
+    readonly issues: GitHubDataSourceStatus;
+    readonly organizations: GitHubDataSourceStatus;
+    readonly commits: GitHubDataSourceStatus;
+    readonly repositories: GitHubDataSourceStatus;
+  };
   /** The year this data represents. */
   readonly year: number;
   /** ISO 8601 timestamp when this data was fetched. */

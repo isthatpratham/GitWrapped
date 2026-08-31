@@ -6,8 +6,8 @@
 // ---------------------------------------------------------------------------
 
 import type { ContributionHistory, PullRequest, Issue } from "@/domain/models";
+import { utcCalendarDate, utcQuarter, utcYearWeekString } from "@/lib/time/utc";
 import type { AnalyticsTimeline, TimelineDataPoint } from "@/services/analytics/analytics.types";
-import { getQuarter, getYearWeekString } from "@/services/analytics/analytics.utils";
 
 export function calculateTimeline(
   contributions: ContributionHistory,
@@ -20,8 +20,20 @@ export function calculateTimeline(
   const dailyPoints: TimelineDataPoint[] = days.map((day) => {
     // Check if user opened PRs/issues on this day
     const dayStartStr = day.date;
-    const prsCount = pullRequests.filter((pr) => pr.openedAt.split("T")[0] === dayStartStr).length;
-    const issuesCount = issues.filter((is) => is.openedAt.split("T")[0] === dayStartStr).length;
+    const prsCount = pullRequests.filter((pr) => {
+      try {
+        return utcCalendarDate(pr.openedAt) === dayStartStr;
+      } catch {
+        return false;
+      }
+    }).length;
+    const issuesCount = issues.filter((is) => {
+      try {
+        return utcCalendarDate(is.openedAt) === dayStartStr;
+      } catch {
+        return false;
+      }
+    }).length;
 
     // Estimate commits for this day from calendar
     // In GitHub calendar, a contribution includes PRs, issues, commits, and reviews.
@@ -42,7 +54,7 @@ export function calculateTimeline(
   // 2. Weekly timeline
   const weeklyMap = new Map<string, TimelineDataPoint>();
   for (const dp of dailyPoints) {
-    const weekKey = getYearWeekString(dp.date);
+    const weekKey = utcYearWeekString(dp.date);
     const existing = weeklyMap.get(weekKey);
     if (existing) {
       weeklyMap.set(weekKey, {
@@ -97,7 +109,7 @@ export function calculateTimeline(
   const quarterlyMap = new Map<string, TimelineDataPoint>();
   for (const dp of dailyPoints) {
     const year = dp.date.substring(0, 4);
-    const q = getQuarter(dp.date);
+    const q = utcQuarter(dp.date);
     const quarterKey = `${year}-Q${q}`;
     const existing = quarterlyMap.get(quarterKey);
     if (existing) {

@@ -5,6 +5,23 @@
 // This allows model files to be reorganised without breaking consumers.
 // ---------------------------------------------------------------------------
 
+// Availability
+export type {
+  DataAvailability,
+  FetchStatus,
+  UnavailabilityReason,
+} from "./availability";
+export {
+  UNAVAILABILITY_REASONS,
+  availableMeasured,
+  availableEstimated,
+  unavailable,
+  notCalculated,
+  isAvailable,
+  isUnavailabilityReason,
+  toFetchStatus,
+} from "./availability";
+
 // User
 export type { UserProfile } from "./user";
 

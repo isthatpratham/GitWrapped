@@ -89,15 +89,25 @@ export function EmptyState({ icon, title, description, children, className }: Em
 interface ErrorStateProps {
   readonly title?: string;
   readonly description: string;
+  readonly actionLabel?: string;
   readonly onRetry?: () => void;
   readonly className?: string;
 }
 
-export function ErrorState({ title = "Something went wrong", description, onRetry, className }: ErrorStateProps) {
+export function ErrorState({
+  title = "Something went wrong",
+  description,
+  actionLabel = "Try again",
+  onRetry,
+  className,
+}: ErrorStateProps) {
   return (
-    <div className={clsx("w-full py-16 flex items-center justify-center border border-danger/10 rounded-lg bg-danger/5", className)}>
+    <div
+      role="alert"
+      className={clsx("w-full py-16 flex items-center justify-center border border-danger/10 rounded-lg bg-danger/5", className)}
+    >
       <Stack space={4} className="max-w-md text-center items-center">
-        <AlertCircle className="h-10 w-10 text-danger" />
+        <AlertCircle className="h-10 w-10 text-danger" aria-hidden="true" />
         <Heading as="h3" className="text-xl md:text-2xl font-bold text-danger">
           {title}
         </Heading>
@@ -106,11 +116,12 @@ export function ErrorState({ title = "Something went wrong", description, onRetr
         </Subtitle>
         {onRetry && (
           <button
+            type="button"
             onClick={onRetry}
-            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-danger text-white rounded-md font-sans font-semibold text-xs uppercase tracking-wider hover:bg-danger/90 transition-all cursor-pointer"
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-danger text-white rounded-md font-sans font-semibold text-xs uppercase tracking-wider hover:bg-danger/90 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <RefreshCw className="h-3 w-3" />
-            Retry
+            <RefreshCw className="h-3 w-3" aria-hidden="true" />
+            {actionLabel}
           </button>
         )}
       </Stack>

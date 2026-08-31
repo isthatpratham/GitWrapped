@@ -85,5 +85,6 @@ export function mapGitHubCommitToCommit(raw: GitHubCommit): Commit {
     linesAdded: raw.additions,
     linesDeleted: raw.deletions,
     changedFileCount: raw.changedFiles,
+    repositoryPath: raw.repositoryPath,
   };
 }
