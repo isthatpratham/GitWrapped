@@ -9,6 +9,20 @@ export { generateStoryDeck } from "./story.service";
 
 export { compileStoryDeck } from "./story-engine";
 
+export { composeStory } from "./compose";
+
+export { generateStoryInsights } from "./intelligence/generate";
+
+export { rankStoryInsights, rankScoreFor } from "./intelligence/rank";
+
+export { collapseRedundantInsights } from "./intelligence/redundancy";
+
+export { selectStoryInsights, buildStoryIntelligence } from "./intelligence/select";
+
+export { classifyDeveloperRhythm } from "./intelligence/rhythm";
+
+export { deriveStoryAchievements } from "./intelligence/achievements";
+
 export { STORY_CONFIG } from "./story.constants";
 
 export { STORY_REGISTRY } from "./story.registry";
@@ -22,6 +36,11 @@ export {
 export type {
   Story,
   StorySlide,
+  StorySlideType,
+  StoryChapter,
+  StoryChapterBlock,
+  StoryDeveloper,
+  DeveloperRhythm,
   StoryTheme,
   MotionPreset,
   SlideTransition,
@@ -30,4 +49,12 @@ export type {
   StoryProgression,
   StoryNavigation,
   StorySharing,
+  StoryEvidence,
 } from "./story.types";
+
+export type {
+  StoryInsight,
+  RankedInsight,
+  InsightKind,
+  InsightFamily,
+} from "./intelligence/types";

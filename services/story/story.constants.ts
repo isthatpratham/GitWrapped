@@ -13,8 +13,8 @@ export const STORY_CONFIG = {
 
   /** Maximum count of slides allowed in a story deck to prevent viewer fatigue. */
   maxSlidesCount: 15,
-  /** Minimum count of slides to maintain story narrative depth. */
-  minSlidesCount: 8,
+  /** Opening + year + finale is enough for low-data recaps. Do not pad. */
+  minSlidesCount: 3,
 
   // Priority ranking for slide types (lower values are positioned earlier)
   priorities: {

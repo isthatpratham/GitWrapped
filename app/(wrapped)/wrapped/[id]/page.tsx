@@ -13,7 +13,7 @@ import React, { use, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { getWrappedStoryDeck } from "@/app/actions/wrapped";
-import type { StorySlide } from "@/services/story";
+import type { Story, StorySlide } from "@/services/story";
 import { clsx } from "clsx";
 import { Viewport, Stack, Flex, Grid } from "@/components/layout";
 import {
@@ -40,12 +40,70 @@ import { getNumericSizeClass, getRepoNameSizeClass } from "@/lib/numeric-scale";
 // Duration of each slide in milliseconds (default: 6 seconds)
 const SLIDE_DURATION = 6000;
 
+function languageBreakdownRows(
+  value: unknown,
+): ReadonlyArray<{ name: string; percentage: number; color: string | null }> {
+  if (!Array.isArray(value)) return [];
+  const rows: Array<{ name: string; percentage: number; color: string | null }> = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    if (!("name" in item) || !("percentage" in item)) continue;
+    const name = item.name;
+    const percentage = item.percentage;
+    if (typeof name !== "string" || typeof percentage !== "number") continue;
+    const color =
+      "color" in item && (typeof item.color === "string" || item.color === null) ? item.color : null;
+    rows.push({ name, percentage, color });
+  }
+  return rows;
+}
+
+function shareCardStats(story: Story): {
+  readonly stats: {
+    readonly formattedTotalContributions?: string;
+    readonly topLanguageName?: string | null;
+    readonly longestStreakDays?: number;
+    readonly globalRankPercentage?: number;
+  };
+  readonly commitsCount: string | number;
+} {
+  const statsSlide =
+    story.slides.find((slide) => slide.type === "Summary") ??
+    story.slides.find((slide) => slide.type === "Overview");
+  const rawStats = statsSlide?.metadata.shareStatistics;
+  const stats =
+    rawStats && typeof rawStats === "object"
+      ? (rawStats as {
+          formattedTotalContributions?: string;
+          topLanguageName?: string | null;
+          longestStreakDays?: number;
+          globalRankPercentage?: number;
+        })
+      : {};
+  const topMetrics = statsSlide?.metadata.topMetrics;
+  const commits =
+    Array.isArray(topMetrics)
+      ? topMetrics.find((item) => {
+          return (
+            typeof item === "object" &&
+            item !== null &&
+            "name" in item &&
+            item.name === "Commits" &&
+            "value" in item
+          );
+        })
+      : undefined;
+  const commitsCount =
+    commits && typeof commits === "object" && "value" in commits ? commits.value : "0";
+  return { stats, commitsCount };
+}
+
 export default function WrappedPlayerPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
   // Engine calculation state
-  const [storyDeck, setStoryDeck] = useState<any>(null);
+  const [storyDeck, setStoryDeck] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -260,12 +318,7 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     const username = storyDeck.metadata.username;
     const year = storyDeck.metadata.year;
 
-    // Find stats from the Summary slide metadata
-    const summarySlide = storyDeck.slides.find((s: any) => s.type === "Summary");
-    const stats = summarySlide?.metadata?.shareStatistics || {};
-    const topMetrics = summarySlide?.metadata?.topMetrics || [];
-
-    const commitsCount = topMetrics.find((m: any) => m.name === "Commits")?.value || "0";
+    const { stats, commitsCount } = shareCardStats(storyDeck);
 
     const svgString = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" width="800" height="1200">
@@ -365,11 +418,7 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     const username = storyDeck.metadata.username;
     const year = storyDeck.metadata.year;
 
-    // Reuse same stats lookup as SVG export
-    const summarySlide = storyDeck.slides.find((s: any) => s.type === "Summary");
-    const stats = summarySlide?.metadata?.shareStatistics || {};
-    const topMetrics = summarySlide?.metadata?.topMetrics || [];
-    const commitsCount = topMetrics.find((m: any) => m.name === "Commits")?.value || "0";
+    const { stats, commitsCount } = shareCardStats(storyDeck);
 
     // Target canvas dimensions (9:16 at retina density)
     const PNG_WIDTH = 1080;
@@ -528,22 +577,21 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     );
   }
 
-  if (error) {
+  if (error || !storyDeck) {
     return (
       <Viewport className="flex items-center justify-center bg-black p-4">
-        <ErrorState description={error} onRetry={() => router.push("/")} />
+        <ErrorState description={error || "Failed to load your GitWrapped story. Please verify your network connection."} onRetry={() => router.push("/")} />
       </Viewport>
     );
   }
 
-  const slides = storyDeck?.slides ?? [];
+  const slides = storyDeck.slides;
   const onShareScreen = activeIndex === slides.length;
   const currentSlide = slides[activeIndex];
   const slideTheme = onShareScreen ? "summary" : currentSlide?.theme ?? "minimal";
 
-  // Summary statistics for the final Share Screen layout
-  const summarySlide = slides.find((s: any) => s.type === "Summary");
-  const shareStats = summarySlide?.metadata?.shareStatistics || {};
+  // Share-screen numbers come from Overview when By The Numbers is omitted.
+  const { stats: shareStats } = shareCardStats(storyDeck);
 
   return (
     <Viewport className="bg-black flex items-center justify-center select-none overflow-hidden">
@@ -847,13 +895,13 @@ function renderSlideGraphic(slide: StorySlide) {
       return (
         <div className="h-20 flex items-center justify-center">
           <Code className="text-sm uppercase tracking-widest text-secondary border border-secondary/20 bg-secondary/5 px-4 py-2">
-            Favorite: {metadata.preferredSession as string} Window
+            Favorite: {String(metadata.preferredSession ?? "UTC")} Window
           </Code>
         </div>
       );
 
     case "Languages":
-      const breakdown = (metadata.breakdown as any[]) || [];
+      const breakdown = languageBreakdownRows(metadata.breakdown);
       return (
         <Stack space={3} className="w-full max-w-[280px]">
           {breakdown.slice(0, 3).map((item, idx) => (
@@ -868,7 +916,7 @@ function renderSlideGraphic(slide: StorySlide) {
                   animate={{ width: `${item.percentage}%` }}
                   transition={{ duration: 0.8, delay: 0.3 * idx }}
                   className="h-full bg-primary"
-                  style={{ backgroundColor: item.color || "#8b5cf6" }}
+      style={{ backgroundColor: item.color ?? "#8b5cf6" }}
                 />
               </div>
             </div>

@@ -6,15 +6,16 @@
 // ---------------------------------------------------------------------------
 
 import type { AnalyticsResult } from "@/services/analytics";
-import type { StorySlide, StoryTheme, MotionPreset, SlideTransition } from "./story.types";
+import type { StorySlide, StorySlideType } from "./story.types";
 import { STORY_CONFIG } from "./story.constants";
+import { availableMeasured } from "@/domain/models";
 
 /**
  * Common layout generator for constructing a Slide object.
  */
 function createSlide(params: {
   readonly id: string;
-  readonly type: string;
+  readonly type: StorySlideType;
   readonly title: string;
   readonly subtitle: string | null;
   readonly headline: string;
@@ -25,18 +26,20 @@ function createSlide(params: {
   readonly metadata: Record<string, unknown>;
 }): StorySlide {
   const type = params.type;
-  const theme = STORY_CONFIG.themes[type] ?? ("minimal" as StoryTheme);
-  const motion = STORY_CONFIG.motion[type] ?? ("fadeUp" as MotionPreset);
-  const transition = STORY_CONFIG.transitions[type] ?? ("slide" as SlideTransition);
+  const theme = STORY_CONFIG.themes[type] ?? "minimal";
+  const motion = STORY_CONFIG.motion[type] ?? "fadeUp";
+  const transition = STORY_CONFIG.transitions[type] ?? "slide";
   const priority = STORY_CONFIG.priorities[type] ?? 100;
 
   return {
     id: params.id,
     type,
+    chapter: "YOUR_YEAR",
     title: params.title,
     subtitle: params.subtitle,
     headline: params.headline,
     description: params.description,
+    heroValue: null,
     icon: params.icon,
     priority,
     duration: STORY_CONFIG.defaultDurationMs,
@@ -44,6 +47,9 @@ function createSlide(params: {
     motion,
     transition,
     analyticsReference: params.analyticsReference,
+    insightId: null,
+    availability: availableMeasured(),
+    evidence: [],
     shareable: params.shareable,
     metadata: params.metadata,
   };
