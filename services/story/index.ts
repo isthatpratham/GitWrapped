@@ -58,3 +58,5 @@ export type {
   InsightKind,
   InsightFamily,
 } from "./intelligence/types";
+
+export { CHAPTER_ORDER, CHAPTER_TITLES } from "./intelligence/types";

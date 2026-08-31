@@ -22,7 +22,7 @@ export function StoryFrame({ children, className }: StoryFrameProps) {
   return (
     <div
       className={clsx(
-        "relative w-full h-full md:h-[840px] md:w-[480px] md:rounded-xl md:border md:border-border bg-background md:shadow-2xl overflow-hidden flex flex-col justify-between select-none",
+        "relative w-full h-full min-h-0 md:h-[840px] md:w-[480px] md:rounded-xl md:border md:border-border bg-background md:shadow-2xl overflow-hidden flex flex-col justify-between select-none",
         className
       )}
     >
@@ -38,33 +38,44 @@ export function StoryFrame({ children, className }: StoryFrameProps) {
 // ---------------------------------------------------------------------------
 
 export interface StoryProgressProps {
-  readonly count: number;
-  readonly activeIndex: number;
-  readonly progress: number; // 0 to 100 representing current slide progress
+  readonly groups: ReadonlyArray<{
+    readonly chapter: string;
+    readonly title: string;
+    readonly segments: ReadonlyArray<{ readonly index: number; readonly fill: number }>;
+  }>;
+  readonly label: string;
   readonly onSegmentClick?: (index: number) => void;
 }
 
-export function StoryProgress({ count, activeIndex, progress, onSegmentClick }: StoryProgressProps) {
+export function StoryProgress({ groups, label, onSegmentClick }: StoryProgressProps) {
   return (
-    <div className="w-full flex gap-1 px-4 py-3 z-raised">
-      {Array.from({ length: count }).map((_, idx) => {
-        let fillWidth = "0%";
-        if (idx < activeIndex) fillWidth = "100%";
-        if (idx === activeIndex) fillWidth = `${progress}%`;
-
-        return (
+    <div className="w-full px-4 pt-3 pb-1 z-raised">
+      <div className="flex gap-2" role="group" aria-label={label}>
+        {groups.map((group) => (
           <div
-            key={idx}
-            onClick={() => onSegmentClick && onSegmentClick(idx)}
-            className="h-1 flex-1 bg-white/15 rounded-full overflow-hidden cursor-pointer relative"
+            key={group.chapter}
+            className="flex flex-1 gap-0.5 min-w-0"
+            role="group"
+            aria-label={group.title}
           >
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-75"
-              style={{ width: fillWidth }}
-            />
+            {group.segments.map((segment) => (
+              <button
+                key={segment.index}
+                type="button"
+                onClick={() => onSegmentClick?.(segment.index)}
+                aria-label={`${group.title}, slide ${segment.index + 1}`}
+                aria-current={segment.fill > 0 && segment.fill < 100 ? "true" : undefined}
+                className="h-1 flex-1 min-w-1 bg-white/15 rounded-full overflow-hidden cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <span
+                  className="block h-full bg-primary rounded-full"
+                  style={{ width: `${segment.fill}%` }}
+                />
+              </button>
+            ))}
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -135,32 +146,39 @@ export interface StoryNavigationProps {
   readonly onNext: () => void;
   readonly onPrev: () => void;
   readonly className?: string;
+  readonly disableNext?: boolean;
+  readonly disablePrev?: boolean;
 }
 
-export function StoryNavigation({ onNext, onPrev, className }: StoryNavigationProps) {
+export function StoryNavigation({
+  onNext,
+  onPrev,
+  className,
+  disableNext = false,
+  disablePrev = false,
+}: StoryNavigationProps) {
   return (
     <div className={clsx("absolute inset-y-0 inset-x-0 flex pointer-events-none z-raised", className)}>
-      {/* Left Tap Zone */}
       <button
+        type="button"
         onClick={onPrev}
-        className="w-1/4 h-full pointer-events-auto cursor-w-resize group flex items-center justify-start pl-4"
-        aria-label="Previous Slide"
+        disabled={disablePrev}
+        className="w-1/4 h-full pointer-events-auto cursor-w-resize group flex items-center justify-start pl-4 disabled:cursor-default focus-visible:outline-none"
+        aria-label="Previous slide"
       >
-        <span className="h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/70 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/70 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
           <ChevronLeft className="h-4 w-4" />
         </span>
       </button>
-
-      {/* Middle Spacer */}
       <div className="flex-1 h-full" />
-
-      {/* Right Tap Zone */}
       <button
+        type="button"
         onClick={onNext}
-        className="w-1/4 h-full pointer-events-auto cursor-e-resize group flex items-center justify-end pr-4"
-        aria-label="Next Slide"
+        disabled={disableNext}
+        className="w-1/4 h-full pointer-events-auto cursor-e-resize group flex items-center justify-end pr-4 disabled:cursor-default focus-visible:outline-none"
+        aria-label="Next slide"
       >
-        <span className="h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/70 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/70 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
           <ChevronRight className="h-4 w-4" />
         </span>
       </button>
