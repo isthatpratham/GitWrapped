@@ -3,6 +3,8 @@ import { z } from "zod";
 import { executeQuery } from "../client";
 import { githubConfig } from "../config";
 import { GitHubResponseValidationError, GitHubUserNotFoundError } from "../errors";
+import { isoTimestampSchema } from "../schemas/primitives";
+import { utcYearRange } from "@/lib/time/utc";
 import type { GitHubUserProfile } from "../types";
 import {
   GET_USER_PROFILE,
@@ -18,11 +20,12 @@ import {
 // ---------------------------------------------------------------------------
 
 const gitHubUserProfileSchema = z.object({
+  id: z.string().min(1),
   login: z.string().min(1),
   name: z.string().nullable(),
   avatarUrl: z.string().url(),
   bio: z.string().nullable(),
-  createdAt: z.string().datetime(),
+  createdAt: isoTimestampSchema,
   websiteUrl: z.string().nullable(),
   twitterUsername: z.string().nullable(),
   company: z.string().nullable(),
@@ -39,8 +42,9 @@ const gitHubUserProfileSchema = z.object({
 // This indirection means if GitHub renames a field, only this function changes.
 // ---------------------------------------------------------------------------
 
-function normaliseUserProfile(raw: NonNullable<GetUserProfileData["user"]>): GitHubUserProfile {
+function normaliseUserProfile(raw: z.infer<typeof gitHubUserProfileSchema>): GitHubUserProfile {
   return {
+    id: raw.id,
     login: raw.login,
     name: raw.name,
     avatarUrl: raw.avatarUrl,
@@ -86,7 +90,7 @@ export async function fetchUserProfile(username: string): Promise<GitHubUserProf
     throw new GitHubResponseValidationError("GetUserProfile", validation.error);
   }
 
-  return normaliseUserProfile(data.user);
+  return normaliseUserProfile(validation.data);
 }
 
 /**
@@ -117,10 +121,7 @@ export async function userExists(username: string): Promise<boolean> {
  * These are the exact values GitHub's `contributionsCollection(from:, to:)` expects.
  */
 export function getYearDateRange(year: number): { from: string; to: string } {
-  return {
-    from: `${year}-01-01T00:00:00Z`,
-    to: `${year}-12-31T23:59:59Z`,
-  };
+  return utcYearRange(year);
 }
 
 /**

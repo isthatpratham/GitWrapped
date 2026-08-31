@@ -2,7 +2,9 @@ import { z } from "zod";
 
 import { executeQuery } from "../client";
 import { GitHubResponseValidationError, GitHubUserNotFoundError } from "../errors";
-import type { ContributionCollection } from "../types";
+import { attributePeakDayRepository, selectPeakContributionDay } from "../peak-day";
+import { calendarDateSchema } from "../schemas/primitives";
+import type { ContributionCollection, GitHubCommit } from "../types";
 import {
   GET_USER_CONTRIBUTIONS,
   type GetUserContributionsData,
@@ -10,12 +12,8 @@ import {
 } from "../queries";
 import { getYearDateRange } from "./user.service";
 
-// ---------------------------------------------------------------------------
-// Zod schema: Contribution data
-// ---------------------------------------------------------------------------
-
 const contributionDaySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+  date: calendarDateSchema,
   contributionCount: z.number().int().nonnegative(),
   contributionLevel: z.enum([
     "NONE",
@@ -63,28 +61,19 @@ const contributionCollectionSchema = z.object({
   commitContributionsByRepository: z.array(repositoryCommitActivitySchema),
 });
 
-// ---------------------------------------------------------------------------
-// Normaliser
-// ---------------------------------------------------------------------------
+type ValidatedContributionCollection = z.infer<typeof contributionCollectionSchema>;
 
 function normaliseContributions(
-  raw: NonNullable<GetUserContributionsData["user"]>["contributionsCollection"],
+  raw: ValidatedContributionCollection,
+  commits: ReadonlyArray<GitHubCommit> = [],
 ): ContributionCollection {
-  let peakDay: { date: string; commitCount: number; repositoryPath: string | null } | null = null;
-  let maxCount = 0;
+  const calendarDays = raw.contributionCalendar.weeks.flatMap((week) => week.contributionDays);
+  const peakDay = selectPeakContributionDay(calendarDays);
 
-  for (const week of raw.contributionCalendar.weeks) {
-    for (const day of week.contributionDays) {
-      if (day.contributionCount > maxCount) {
-        maxCount = day.contributionCount;
-        peakDay = {
-          date: day.date,
-          commitCount: day.contributionCount,
-          repositoryPath: raw.commitContributionsByRepository[0]?.repository?.nameWithOwner ?? null,
-        };
-      }
-    }
-  }
+  const repositoryPath =
+    peakDay === null
+      ? null
+      : attributePeakDayRepository(peakDay.date, commits);
 
   return {
     totalCommitContributions: raw.totalCommitContributions,
@@ -115,26 +104,16 @@ function normaliseContributions(
           }
         : null,
     })),
-    peakDay,
+    peakDay: peakDay
+      ? {
+          date: peakDay.date,
+          commitCount: peakDay.commitCount,
+          repositoryPath,
+        }
+      : null,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Public service function
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches and validates the contribution collection for a GitHub user
- * within a specific calendar year.
- *
- * @param username - The GitHub login handle.
- * @param year - The calendar year to fetch contributions for.
- * @returns A validated `ContributionCollection` object.
- *
- * @throws {GitHubUserNotFoundError} When the username does not exist.
- * @throws {GitHubResponseValidationError} When the response fails schema validation.
- * @throws {GitHubSDKError} For any transport, HTTP, or GraphQL failure.
- */
 export async function fetchUserContributions(
   username: string,
   year: number,
@@ -158,18 +137,27 @@ export async function fetchUserContributions(
     throw new GitHubResponseValidationError("GetUserContributions", validation.error);
   }
 
-  return normaliseContributions(data.user.contributionsCollection);
+  return normaliseContributions(validation.data);
 }
 
-// ---------------------------------------------------------------------------
-// Contribution helpers
-// ---------------------------------------------------------------------------
-
 /**
- * Flattens all contribution days from a `ContributionCollection` into a
- * single sorted array. This is the most common operation the Analytics
- * Engine performs on contribution data.
+ * Re-applies peak-day repository attribution after real commits are fetched.
  */
+export function applyCommitAttributionToContributions(
+  collection: ContributionCollection,
+  commits: ReadonlyArray<GitHubCommit>,
+): ContributionCollection {
+  if (collection.peakDay === null) return collection;
+
+  return {
+    ...collection,
+    peakDay: {
+      ...collection.peakDay,
+      repositoryPath: attributePeakDayRepository(collection.peakDay.date, commits),
+    },
+  };
+}
+
 export function flattenContributionDays(
   collection: ContributionCollection,
 ): ReadonlyArray<ContributionCollection["contributionCalendar"]["weeks"][number]["contributionDays"][number]> {

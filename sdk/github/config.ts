@@ -1,3 +1,5 @@
+import "server-only";
+
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
@@ -17,7 +19,10 @@ const githubEnvSchema = z.object({
   GITHUB_TOKEN: z
     .string()
     .min(1, "GITHUB_TOKEN is required for the GitHub SDK")
-    .startsWith("ghp_", "GITHUB_TOKEN must be a fine-grained or classic PAT (ghp_...)"),
+    .refine(
+      (value) => value.startsWith("ghp_") || value.startsWith("github_pat_"),
+      "GITHUB_TOKEN must be a GitHub personal access token",
+    ),
 
   /**
    * GitHub GraphQL API endpoint.
@@ -45,12 +50,10 @@ function parseGitHubEnv() {
   });
 
   if (!result.success) {
-    const formatted = result.error.format();
-    const message = [
-      "❌ GitHub SDK: Invalid environment configuration.",
-      "   Missing or invalid variables:",
-      JSON.stringify(formatted, null, 2),
-    ].join("\n");
+    const issueSummary = result.error.issues
+      .map((issue) => `${issue.path.join(".") || "env"}:${issue.code}`)
+      .join(", ");
+    const message = `GitHub SDK: invalid environment configuration (${issueSummary}).`;
 
     if (process.env.NODE_ENV === "production") {
       throw new Error(message);
@@ -108,7 +111,7 @@ export const githubConfig = {
    * Defaults to the current calendar year.
    */
   get recapYear(): number {
-    return new Date().getFullYear();
+    return new Date().getUTCFullYear();
   },
 
   /**

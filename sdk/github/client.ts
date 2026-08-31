@@ -1,3 +1,5 @@
+import "server-only";
+
 import { githubConfig } from "./config";
 import {
   GitHubAuthenticationError,

@@ -11,9 +11,10 @@
 //
 // ---------------------------------------------------------------------------
 
-// Configuration
-export { githubConfig } from "./config";
-
+// Configuration is server-only. Do not re-export githubConfig from this
+// barrel — it contains the PAT. Import config only from server modules.
+export { parseGitHubUsername, githubUsernameSchema } from "./username";
+export { selectPeakContributionDay, attributePeakDayRepository } from "./peak-day";
 // Error classes and type guards
 export {
   GitHubSDKError,
@@ -25,6 +26,7 @@ export {
   GitHubRateLimitError,
   GitHubGraphQLError,
   GitHubUserNotFoundError,
+  GitHubInvalidUsernameError,
   GitHubResponseValidationError,
   isGitHubSDKError,
   isGitHubRateLimitError,
@@ -69,29 +71,27 @@ export type {
   GitHubRateLimit,
   // Service contracts
   GitHubAnnualData,
+  GitHubDataSourceStatus,
   FetchAnnualDataOptions,
 } from "./types";
 
 // Service functions (primary SDK API)
 export {
-  // Primary entry points
   fetchAnnualData,
   fetchCurrentYearData,
-  generateMockAnnualData,
-  // Individual data fetchers
   fetchUserProfile,
   fetchUserContributions,
   fetchUserRepositories,
   fetchUserPullRequests,
-  // Utilities
+  fetchUserIssues,
+  fetchUserOrganizations,
+  fetchUserCommitsForRepositories,
   userExists,
   getYearDateRange,
   getRecapYear,
   flattenContributionDays,
-  // Rate limit
   fetchRateLimit,
   hasSufficientRateLimit,
 } from "./services";
 
-// Low-level client (for advanced use cases or testing)
-export { executeQuery } from "./client";
+// Low-level client stays internal to the SDK. Callers use fetchAnnualData.
