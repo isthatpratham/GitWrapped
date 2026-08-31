@@ -1,17 +1,31 @@
-// ---------------------------------------------------------------------------
-// Calculator: Consistency
-// ---------------------------------------------------------------------------
-// Evaluates weekly/monthly consistency percentages, streaks, missed days,
-// and computes the final normalised Consistency Score.
-// ---------------------------------------------------------------------------
-
 import type { ContributionHistory } from "@/domain/models";
+import { isCalendarDateInYear, utcMonthIndex, utcYearWeekString } from "@/lib/time/utc";
 import type { AnalyticsConsistency } from "@/services/analytics/analytics.types";
 import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
-import { createNormalizedScore, getYearWeekString } from "@/services/analytics/analytics.utils";
+import { createNormalizedScore } from "@/services/analytics/analytics.utils";
 
-export function calculateConsistency(contributions: ContributionHistory): AnalyticsConsistency {
-  const days = contributions.calendar.weeks.flatMap((w) => w.days);
+/**
+ * Consistency semantics
+ *
+ * Calendar weeks from GitHub include padding days from adjacent years.
+ * All day-level metrics below are restricted to the recap year (UTC calendar dates).
+ *
+ * Score formula (0–100):
+ *   40% activeDaysRatio  = min(1, activeDaysInYear / targetActiveDays)
+ *                          targetActiveDays is 150 (see ANALYTICS_CONFIG)
+ *   30% weeklyRatio      = activeWeeksInYear / weeksIntersectingYear
+ *   30% streakRatio      = min(1, longestStreak / 30)
+ *
+ * `activeDaysRatio` previously reused the weekly ratio. That disagreed with
+ * the documented active-days target. Product scores will change for users
+ * whose weekly rhythm and day count diverge.
+ */
+export function calculateConsistency(
+  contributions: ContributionHistory,
+  year: number,
+): AnalyticsConsistency {
+  const allDays = contributions.calendar.weeks.flatMap((w) => w.days);
+  const days = allDays.filter((day) => isCalendarDateInYear(day.date, year));
 
   let longestStreak = 0;
   let longestStreakStartDate: string | null = null;
@@ -23,28 +37,26 @@ export function calculateConsistency(contributions: ContributionHistory): Analyt
   let tempStreak = 0;
   let tempStreakStart = "";
   let missedDaysCount = 0;
+  let activeDaysCount = 0;
 
   const weekActiveMap = new Map<string, boolean>();
   const monthActiveMap = new Map<number, boolean>();
 
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
-    if (!day) continue;
-
+  for (const day of days) {
     const count = day.count;
     const dateStr = day.date;
-    const date = new Date(dateStr);
-    const weekKey = getYearWeekString(dateStr);
-    const month = date.getMonth();
+    const weekKey = utcYearWeekString(dateStr);
+    const month = utcMonthIndex(dateStr);
 
     if (count > 0) {
+      activeDaysCount += 1;
       weekActiveMap.set(weekKey, true);
-      monthActiveMap.set(month, true);
+      if (month !== null) monthActiveMap.set(month, true);
 
       if (tempStreak === 0) {
         tempStreakStart = dateStr;
       }
-      tempStreak++;
+      tempStreak += 1;
 
       if (tempStreak > longestStreak) {
         longestStreak = tempStreak;
@@ -52,31 +64,25 @@ export function calculateConsistency(contributions: ContributionHistory): Analyt
         longestStreakEndDate = dateStr;
       }
     } else {
-      missedDaysCount++;
+      missedDaysCount += 1;
       tempStreak = 0;
     }
   }
 
-  // Current streak (backward scanner)
   let activeBackward = 0;
   let startedStreak = false;
   let streakStart: string | null = null;
 
-  for (let i = days.length - 1; i >= 0; i--) {
+  for (let i = days.length - 1; i >= 0; i -= 1) {
     const day = days[i];
     if (!day) continue;
 
     if (day.count > 0) {
-      activeBackward++;
+      activeBackward += 1;
       startedStreak = true;
       streakStart = day.date;
-    } else {
-      if (startedStreak) {
-        break;
-      }
-      if (days.length - 1 - i > 1) {
-        break;
-      }
+    } else if (startedStreak || days.length - 1 - i > 1) {
+      break;
     }
   }
 
@@ -85,23 +91,25 @@ export function calculateConsistency(contributions: ContributionHistory): Analyt
     currentStreakStartDate = streakStart;
   }
 
-  // Weekly consistency: active weeks / total weeks
-  const totalWeeks = contributions.calendar.weeks.length || 1;
+  const weeksInYear = contributions.calendar.weeks.filter((week) =>
+    week.days.some((day) => isCalendarDateInYear(day.date, year)),
+  );
+  const totalWeeks = weeksInYear.length || 1;
   const activeWeeksCount = weekActiveMap.size;
   const averageWeeklyConsistency = parseFloat(((activeWeeksCount / totalWeeks) * 100).toFixed(2));
 
-  // Monthly consistency: active months / 12
   const activeMonthsCount = monthActiveMap.size;
   const averageMonthlyConsistency = parseFloat(((activeMonthsCount / 12) * 100).toFixed(2));
 
-  // Consecutive active weeks (max consecutive weeks with at least 1 contribution)
   let maxConsecutiveWeeks = 0;
   let currentConsecutiveWeeks = 0;
 
-  for (const week of contributions.calendar.weeks) {
-    const isWeekActive = week.days.some((d) => d.count > 0);
+  for (const week of weeksInYear) {
+    const isWeekActive = week.days.some(
+      (d) => isCalendarDateInYear(d.date, year) && d.count > 0,
+    );
     if (isWeekActive) {
-      currentConsecutiveWeeks++;
+      currentConsecutiveWeeks += 1;
       if (currentConsecutiveWeeks > maxConsecutiveWeeks) {
         maxConsecutiveWeeks = currentConsecutiveWeeks;
       }
@@ -110,17 +118,16 @@ export function calculateConsistency(contributions: ContributionHistory): Analyt
     }
   }
 
-  // Consistency Score (0-100): Weighted formula based on total active days, longest streak, and weekly rhythm consistency.
-  // 40% active days ratio (target 150 days), 30% weekly consistency, 30% longest streak ratio (target 30 days)
-  const activeDaysRatio = Math.min(1, weekActiveMap.size / totalWeeks); // active weeks ratio
-  const weeklyRatio = activeWeeksCount / totalWeeks;
+  const targetActiveDays = ANALYTICS_CONFIG.consistency.targetActiveDays;
+  const activeDaysRatio = Math.min(1, activeDaysCount / targetActiveDays);
+  const weeklyRatio = Math.min(1, activeWeeksCount / totalWeeks);
   const streakRatio = Math.min(1, longestStreak / 30);
 
-  const rawScore = (activeDaysRatio * 40) + (weeklyRatio * 30) + (streakRatio * 30);
+  const rawScore = activeDaysRatio * 40 + weeklyRatio * 30 + streakRatio * 30;
   const consistencyScore = createNormalizedScore(
     rawScore,
     ANALYTICS_CONFIG.consistency.maxConsistencyScore,
-    `Calculated from a weekly active ratio of ${averageWeeklyConsistency}% and a longest streak of ${longestStreak} days.`,
+    `Calculated from ${activeDaysCount} active days (target ${targetActiveDays}), weekly active ratio ${averageWeeklyConsistency}%, and a longest streak of ${longestStreak} days.`,
   );
 
   return {
@@ -131,6 +138,8 @@ export function calculateConsistency(contributions: ContributionHistory): Analyt
     currentStreakStartDate,
     averageWeeklyConsistency,
     averageMonthlyConsistency,
+    activeDaysCount,
+    activeDaysRatio: parseFloat(activeDaysRatio.toFixed(4)),
     missedDaysCount,
     consecutiveActiveWeeks: maxConsecutiveWeeks,
     consistencyScore,

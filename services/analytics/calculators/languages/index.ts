@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import type { LanguageProfile, Repository } from "@/domain/models";
+import { utcYear } from "@/lib/time/utc";
 import type { AnalyticsLanguages } from "@/services/analytics/analytics.types";
 import { ANALYTICS_CONFIG } from "@/services/analytics/analytics.constants";
 import { createNormalizedScore } from "@/services/analytics/analytics.utils";
@@ -50,7 +51,9 @@ export function calculateLanguages(
   const evolutionMap = new Map<number, Map<string, number>>();
 
   for (const repo of repositories) {
-    const creationYear = new Date(repo.createdAt).getFullYear();
+    const creationYear = utcYear(repo.createdAt);
+    if (creationYear === null) continue;
+
     const primaryLang = repo.primaryLanguage?.name;
     if (!primaryLang) continue;
 
@@ -79,7 +82,8 @@ export function calculateLanguages(
   const newLanguages = new Set<string>();
 
   for (const repo of repositories) {
-    const creationYear = new Date(repo.createdAt).getFullYear();
+    const creationYear = utcYear(repo.createdAt);
+    if (creationYear === null) continue;
     for (const edge of repo.languageUsage) {
       const name = edge.language.name;
       if (creationYear < recapYear) {
@@ -98,15 +102,15 @@ export function calculateLanguages(
   const legacyLanguages = new Set<string>();
 
   for (const repo of repositories) {
-    const pushYear = repo.lastPushedAt ? new Date(repo.lastPushedAt).getFullYear() : 0;
-    const creationYear = new Date(repo.createdAt).getFullYear();
+    const pushYear = repo.lastPushedAt ? utcYear(repo.lastPushedAt) : null;
+    const creationYear = utcYear(repo.createdAt);
 
     for (const edge of repo.languageUsage) {
       const name = edge.language.name;
       if (pushYear === recapYear) {
         activeLanguagesThisYear.add(name);
       }
-      if (creationYear < recapYear) {
+      if (creationYear !== null && creationYear < recapYear) {
         legacyLanguages.add(name);
       }
     }

@@ -17,9 +17,12 @@ export {
   CalculationError,
 } from "./analytics.errors";
 
+export { FETCHED_ANALYTICS_SOURCES } from "./analytics.types";
+
 export type {
   AnalyticsEngineInput,
   AnalyticsResult,
+  AnalyticsAvailability,
   NormalizedScore,
   AnalyticsOverview,
   AnalyticsProductivity,

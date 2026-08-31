@@ -56,7 +56,9 @@ export const StoryBuilders = {
       type: "Welcome",
       title: "Welcome",
       subtitle: `Your Year in Code`,
-      headline: `Hey ${analytics.summary.shareStatistics.topLanguageName} Dev, let's look back at ${analytics.year}.`,
+      headline: analytics.summary.shareStatistics.topLanguageName
+        ? `Hey ${analytics.summary.shareStatistics.topLanguageName} Dev, let's look back at ${analytics.year}.`
+        : `Hey ${analytics.user.displayName ?? analytics.user.handle}, let's look back at ${analytics.year}.`,
       description: "Welcome to your GitWrapped annual recap. Get ready to scroll through your coding journey.",
       icon: "wave",
       analyticsReference: "user",
@@ -125,19 +127,29 @@ export const StoryBuilders = {
   },
 
   buildProductivity: (analytics: AnalyticsResult): StorySlide => {
+    const time = analytics.activity.timeAnalysis;
+    const session = time.preferredCodingSession;
+    const hour = time.mostActiveHour;
+    const nightOwl = time.nightOwlScore;
+
     return createSlide({
       id: "productivity-slide",
       type: "Productivity",
       title: "Peak Productivity",
       subtitle: "Coding Schedule Analysis",
-      headline: `Your favorite session is the ${analytics.activity.timeAnalysis.preferredCodingSession} window.`,
-      description: `You committed most at ${analytics.activity.timeAnalysis.mostActiveHour}:00 UTC. Night Owl Score is ${analytics.activity.timeAnalysis.nightOwlScore.percentage}%.`,
+      headline: session
+        ? `Your favorite session is the ${session} window.`
+        : "Hour-of-day coding patterns need real commit timestamps.",
+      description:
+        hour !== null && nightOwl
+          ? `You committed most at ${hour}:00 UTC. Night Owl Score is ${nightOwl.percentage}%.`
+          : "GitHub did not provide enough commit timestamps to measure coding hours for this recap.",
       icon: "clock",
       analyticsReference: "activity.timeAnalysis",
       shareable: true,
       metadata: {
-        preferredSession: analytics.activity.timeAnalysis.preferredCodingSession,
-        mostActiveHour: analytics.activity.timeAnalysis.mostActiveHour,
+        preferredSession: session,
+        mostActiveHour: hour,
       },
     });
   },

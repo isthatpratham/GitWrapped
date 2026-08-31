@@ -85,12 +85,16 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
         
         // Map specific SDK errors to user-friendly messages
         const errMsg = err?.message || "";
-        if (errMsg.includes("User not found") || errMsg.includes("404")) {
+        if (errMsg === "INVALID_USERNAME") {
+          setError("That GitHub username is invalid. Please check the spelling.");
+        } else if (errMsg === "USER_NOT_FOUND" || errMsg.includes("User not found") || errMsg.includes("404")) {
           setError("GitHub user not found. Please double-check the username.");
-        } else if (errMsg.includes("rate limit") || errMsg.includes("403") || errMsg.includes("429")) {
+        } else if (errMsg === "RATE_LIMIT" || errMsg.includes("rate limit") || errMsg.includes("403") || errMsg.includes("429")) {
           setError("GitHub API rate limit exceeded. Please try again later.");
-        } else if (errMsg.includes("Authentication") || errMsg.includes("401") || errMsg.includes("GITHUB_TOKEN")) {
-          setError("GitHub credentials error. Please verify your GITHUB_TOKEN environment variable.");
+        } else if (errMsg === "AUTH_FAILED" || errMsg.includes("Authentication") || errMsg.includes("401")) {
+          setError("GitHub credentials error. Please verify server configuration.");
+        } else if (errMsg === "MALFORMED_RESPONSE") {
+          setError("GitHub returned an unexpected response. Please try again later.");
         } else {
           setError("Failed to load your GitWrapped story. Please verify your network connection.");
         }
