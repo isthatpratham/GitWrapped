@@ -14,7 +14,7 @@
 // Configuration is server-only. Do not re-export githubConfig from this
 // barrel — it contains the PAT. Import config only from server modules.
 export { parseGitHubUsername, githubUsernameSchema } from "./username";
-export { selectPeakContributionDay, attributePeakDayRepository } from "./peak-day";
+export { selectPeakContributionDay, attributePeakDayRepository, peakDayEventsFromSources } from "./peak-day";
 // Error classes and type guards
 export {
   GitHubSDKError,

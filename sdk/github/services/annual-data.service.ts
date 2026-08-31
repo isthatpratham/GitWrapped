@@ -58,7 +58,15 @@ export async function fetchAnnualData(
     fetchOptional(() => fetchUserOrganizations(username), []),
   ]);
 
-  const commitPaths = contributions.repositoryActivity.map((item) => item.repositoryPath);
+  const commitPaths = Array.from(
+    new Set(
+      [
+        ...contributions.repositoryActivity.map((item) => item.repositoryPath),
+        ...pullRequestsResult.data.map((pullRequest) => pullRequest.baseRepository?.nameWithOwner),
+        ...issuesResult.data.map((issue) => issue.repository.nameWithOwner),
+      ].filter((path): path is string => Boolean(path)),
+    ),
+  );
   let commits: GitHubAnnualData["commits"] = [];
   let commitsStatus: GitHubDataSourceStatus = { status: "unavailable", reason: "no_commit_timestamps" };
 
@@ -86,7 +94,12 @@ export async function fetchAnnualData(
     commitsStatus = FETCHED;
   }
 
-  const attributedContributions = applyCommitAttributionToContributions(contributions, commits);
+  const attributedContributions = applyCommitAttributionToContributions(
+    contributions,
+    commits,
+    pullRequestsResult.data,
+    issuesResult.data,
+  );
 
   return {
     user,

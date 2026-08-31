@@ -96,4 +96,24 @@ describe("story copy templates", () => {
     expect(copy.headline).toContain("isthatpratham/DeadDrop");
     expect(copy.headline).toContain("saw the most activity on your biggest day");
   });
+
+  it("does not present missing external commits as a measured zero", () => {
+    const copy = copyForInsight(
+      insight({
+        kind: "open-source",
+        payload: {
+          kind: "open-source",
+          pullRequestCount: 10,
+          commitCount: 0,
+          issueCount: 0,
+          uniqueRepositoryCount: 9,
+          featuredRepositoryPath: "ammiyo/movie-recommendation-dashboard",
+        },
+      }),
+      "isthatpratham",
+    );
+    expect(copy.description).toContain("10 pull requests");
+    expect(copy.description).not.toContain("0 commits");
+    expect(copy.description).toContain("ammiyo/movie-recommendation-dashboard");
+  });
 });

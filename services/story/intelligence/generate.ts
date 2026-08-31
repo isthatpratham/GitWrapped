@@ -517,8 +517,12 @@ export function generateStoryInsights(analytics: AnalyticsResult): readonly Stor
         heroValue: openSource.uniqueRepositoryCount,
         evidence: [
           { label: "External repositories", value: String(openSource.uniqueRepositoryCount) },
-          { label: "Pull requests", value: String(openSource.pullRequestCount) },
-          { label: "Commits", value: String(openSource.commitCount) },
+          ...(openSource.pullRequestCount > 0
+            ? [{ label: "Pull requests", value: String(openSource.pullRequestCount) }]
+            : []),
+          ...(openSource.commitCount > 0
+            ? [{ label: "Commits", value: String(openSource.commitCount) }]
+            : []),
         ],
         payload: { kind: "open-source", ...openSource },
       }),

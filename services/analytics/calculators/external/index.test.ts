@@ -97,4 +97,22 @@ describe("calculateExternalContributions", () => {
     expect(result.uniqueRepositoryCount).toBe(1);
     expect(result.featuredRepositoryPath).toBe("microsoft/vscode");
   });
+
+  it("does not report zero commits when GitHub contribution activity has external commits", () => {
+    const result = calculateExternalContributions(
+      "isthatpratham",
+      [],
+      [
+        pullRequest("ammiyo/movie-recommendation-dashboard"),
+        pullRequest("ammiyo/movie-recommendation-dashboard"),
+        pullRequest("someone/other-repo"),
+      ],
+      [],
+      [{ repositoryPath: "ammiyo/movie-recommendation-dashboard", commitCount: 6, primaryLanguage: null }],
+    );
+    expect(result.pullRequestCount).toBe(3);
+    expect(result.commitCount).toBe(6);
+    expect(result.featuredRepositoryPath).toBe("ammiyo/movie-recommendation-dashboard");
+    expect(result.uniqueRepositoryCount).toBe(2);
+  });
 });

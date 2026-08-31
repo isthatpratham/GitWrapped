@@ -12,8 +12,10 @@ import {
 } from "../queries";
 import { getYearDateRange } from "./user.service";
 
-const MAX_REPOSITORIES = 5;
-const MAX_PAGES_PER_REPOSITORY = 2;
+const TIMESTAMP_REPOSITORIES = 5;
+const MAX_REPOSITORIES = 25;
+const MAX_PAGES_FOR_TIMESTAMPS = 2;
+const MAX_PAGES_FOR_ATTRIBUTION = 1;
 
 const commitNodeSchema = z.object({
   oid: z.string().min(1),
@@ -82,6 +84,7 @@ async function fetchRepositoryCommits(
   authorId: string,
   repositoryPath: string,
   year: number,
+  maxPages: number = MAX_PAGES_FOR_TIMESTAMPS,
 ): Promise<ReadonlyArray<GitHubCommit>> {
   const split = splitRepositoryPath(repositoryPath);
   if (split === null) return [];
@@ -92,7 +95,7 @@ async function fetchRepositoryCommits(
   let pages = 0;
   let hasNextPage = true;
 
-  while (hasNextPage && pages < MAX_PAGES_PER_REPOSITORY) {
+  while (hasNextPage && pages < maxPages) {
     const data = await executeQuery<GetRepositoryCommitsData>({
       query: GET_REPOSITORY_COMMITS,
       variables: {
@@ -131,8 +134,9 @@ async function fetchRepositoryCommits(
 }
 
 /**
- * Fetches real commit timestamps for the user's top contribution repositories.
- * Bounded to protect the shared rate limit: 5 repos × 2 pages × 100 commits.
+ * Fetches real commit timestamps for contribution and pull-request repositories.
+ * Top repositories get two pages for hour analysis; remaining paths get one page
+ * so peak-day and external attribution are not limited to the yearly top five.
  */
 export async function fetchUserCommitsForRepositories(
   options: FetchUserCommitsOptions,
@@ -142,9 +146,10 @@ export async function fetchUserCommitsForRepositories(
   const commits: GitHubCommit[] = [];
   let partial = uniquePaths.length > limited.length;
 
-  for (const path of limited) {
+  for (const [index, path] of limited.entries()) {
+    const maxPages = index < TIMESTAMP_REPOSITORIES ? MAX_PAGES_FOR_TIMESTAMPS : MAX_PAGES_FOR_ATTRIBUTION;
     try {
-      const repoCommits = await fetchRepositoryCommits(options.authorId, path, options.year);
+      const repoCommits = await fetchRepositoryCommits(options.authorId, path, options.year, maxPages);
       commits.push(...repoCommits);
     } catch {
       partial = true;

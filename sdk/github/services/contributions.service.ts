@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { executeQuery } from "../client";
 import { GitHubResponseValidationError, GitHubUserNotFoundError } from "../errors";
-import { attributePeakDayRepository, selectPeakContributionDay } from "../peak-day";
+import {
+  attributePeakDayRepository,
+  peakDayEventsFromSources,
+  selectPeakContributionDay,
+} from "../peak-day";
 import { calendarDateSchema } from "../schemas/primitives";
 import type { ContributionCollection, GitHubCommit } from "../types";
 import {
@@ -141,11 +145,19 @@ export async function fetchUserContributions(
 }
 
 /**
- * Re-applies peak-day repository attribution after real commits are fetched.
+ * Re-applies peak-day repository attribution after commits, PRs, and issues are fetched.
  */
 export function applyCommitAttributionToContributions(
   collection: ContributionCollection,
   commits: ReadonlyArray<GitHubCommit>,
+  pullRequests: ReadonlyArray<{
+    readonly createdAt: string;
+    readonly baseRepository: { readonly nameWithOwner: string } | null;
+  }> = [],
+  issues: ReadonlyArray<{
+    readonly createdAt: string;
+    readonly repository: { readonly nameWithOwner: string };
+  }> = [],
 ): ContributionCollection {
   if (collection.peakDay === null) return collection;
 
@@ -153,7 +165,10 @@ export function applyCommitAttributionToContributions(
     ...collection,
     peakDay: {
       ...collection.peakDay,
-      repositoryPath: attributePeakDayRepository(collection.peakDay.date, commits),
+      repositoryPath: attributePeakDayRepository(
+        collection.peakDay.date,
+        peakDayEventsFromSources({ commits, pullRequests, issues }),
+      ),
     },
   };
 }

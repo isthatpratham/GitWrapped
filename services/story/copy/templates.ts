@@ -8,6 +8,28 @@ export interface StoryCopy {
   readonly description: string;
 }
 
+function repositoryNoun(count: number): string {
+  return count === 1 ? "repository" : "repositories";
+}
+
+function openSourceActivityLine(payload: {
+  readonly pullRequestCount: number;
+  readonly commitCount: number;
+  readonly uniqueRepositoryCount: number;
+}): string {
+  const repos = `${payload.uniqueRepositoryCount} ${repositoryNoun(payload.uniqueRepositoryCount)} you don't own`;
+  if (payload.pullRequestCount > 0 && payload.commitCount > 0) {
+    return `${payload.pullRequestCount} pull requests and ${payload.commitCount} commits reached ${repos}.`;
+  }
+  if (payload.pullRequestCount > 0) {
+    return `${payload.pullRequestCount} pull requests reached ${repos}.`;
+  }
+  if (payload.commitCount > 0) {
+    return `${payload.commitCount} commits reached ${repos}.`;
+  }
+  return `Public activity reached ${repos}.`;
+}
+
 export function copyForInsight(insight: StoryInsight, handle: string): StoryCopy {
   const payload = insight.payload;
 
@@ -53,7 +75,7 @@ export function copyForInsight(insight: StoryInsight, handle: string): StoryCopy
         title: "Peak Day Repository",
         subtitle: payload.repositoryPath,
         headline: `${payload.repositoryPath} saw the most activity on your biggest day.`,
-        description: `On ${formatCalendarDate(payload.date)}, most attributed commits on that UTC date went to this repository.`,
+        description: `On ${formatCalendarDate(payload.date)}, this repository had the most public commits, pull requests, and issues we could attribute to that UTC day.`,
       };
 
     case "most-starred-repository":
@@ -154,8 +176,10 @@ export function copyForInsight(insight: StoryInsight, handle: string): StoryCopy
         subtitle: payload.featuredRepositoryPath,
         headline: "You didn't just build your own stuff.",
         description: [
-          `${payload.pullRequestCount} pull requests and ${payload.commitCount} commits reached ${payload.uniqueRepositoryCount} repositor${payload.uniqueRepositoryCount === 1 ? "y" : "ies"} you don't own.`,
-          payload.featuredRepositoryPath ? `Most of that external signal pointed at ${payload.featuredRepositoryPath}.` : null,
+          openSourceActivityLine(payload),
+          payload.featuredRepositoryPath
+            ? `Most of that external signal pointed at ${payload.featuredRepositoryPath}.`
+            : null,
           "That measures activity outside your handle, not that you created those projects.",
         ]
           .filter((part): part is string => Boolean(part))

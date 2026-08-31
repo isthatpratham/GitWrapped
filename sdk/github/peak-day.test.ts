@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   attributePeakDayRepository,
+  peakDayEventsFromSources,
   selectPeakContributionDay,
 } from "./peak-day";
 
@@ -68,5 +69,31 @@ describe("attributePeakDayRepository", () => {
     ]);
 
     expect(path).toBe("alpha/repo");
+  });
+
+  it("attributes the peak day using pull requests and issues, not only fetched commits", () => {
+    const events = peakDayEventsFromSources({
+      commits: [{ committedDate: "2026-08-31T10:00:00.000Z", repositoryPath: "isthatpratham/GitWrapped" }],
+      pullRequests: [
+        {
+          createdAt: "2026-08-31T11:00:00.000Z",
+          baseRepository: { nameWithOwner: "ammiyo/movie-recommendation-dashboard" },
+        },
+        {
+          createdAt: "2026-08-31T12:00:00.000Z",
+          baseRepository: { nameWithOwner: "ammiyo/movie-recommendation-dashboard" },
+        },
+      ],
+      issues: [
+        {
+          createdAt: "2026-08-31T13:00:00.000Z",
+          repository: { nameWithOwner: "ammiyo/movie-recommendation-dashboard" },
+        },
+      ],
+    });
+
+    expect(attributePeakDayRepository("2026-08-31", events)).toBe(
+      "ammiyo/movie-recommendation-dashboard",
+    );
   });
 });
