@@ -21,7 +21,7 @@ import {
 } from "@/sdk/github/mapper";
 import { generateRecapAnalytics } from "@/services/analytics";
 import { generateStoryDeck } from "@/services/story";
-import type { Story } from "@/services/story";
+import type { WrappedDeckResult } from "@/lib/player/deck-result";
 import { toFetchStatus } from "@/domain/models";
 
 const SAFE_ERROR = {
@@ -61,7 +61,7 @@ function mapLoadError(error: unknown): Error {
   return recapError(SAFE_ERROR.fetchFailed);
 }
 
-export async function getWrappedStoryDeck(username: string): Promise<Story> {
+export async function getWrappedStoryDeck(username: string): Promise<WrappedDeckResult> {
   try {
     const year = getRecapYear();
     const rawData = await fetchAnnualData({ username, year });
@@ -84,8 +84,8 @@ export async function getWrappedStoryDeck(username: string): Promise<Story> {
       },
     });
 
-    return generateStoryDeck(analytics);
+    return { ok: true, story: generateStoryDeck(analytics) };
   } catch (error) {
-    throw mapLoadError(error);
+    return { ok: false, code: mapLoadError(error).message };
   }
 }

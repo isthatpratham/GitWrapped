@@ -8,7 +8,13 @@ import { Viewport } from "@/components/layout";
 import { ErrorState } from "@/components/ui";
 import { StoryLoading } from "@/components/player/StoryLoading";
 import { StoryPlayer } from "@/components/player/StoryPlayer";
-import { recapErrorCode, recapErrorCopy, shouldEnterStory } from "@/lib/player";
+import {
+  recapErrorCode,
+  recapErrorCopy,
+  shouldEnterStory,
+  storyPlayerClosePath,
+  unwrapWrappedDeck,
+} from "@/lib/player";
 
 export default function WrappedPlayerPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
   const { id } = use(params);
@@ -29,9 +35,14 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     void (async () => {
       try {
         const decodedUsername = decodeURIComponent(id);
-        const deck = await getWrappedStoryDeck(decodedUsername);
+        const deck = unwrapWrappedDeck(await getWrappedStoryDeck(decodedUsername));
         if (cancelled) return;
-        setStory(deck);
+        if (deck.code) {
+          setErrorCode(deck.code);
+          setLoading(false);
+          return;
+        }
+        setStory(deck.story);
         setLoading(false);
       } catch (error) {
         if (cancelled) return;
@@ -61,7 +72,8 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
         <ErrorState
           title={copy.title}
           description={copy.description}
-          onRetry={copy.retryable ? () => setAttempt((value) => value + 1) : () => router.push("/")}
+          actionLabel={copy.retryable ? "Try again" : "Return home"}
+          onRetry={copy.retryable ? () => setAttempt((value) => value + 1) : () => router.push(storyPlayerClosePath())}
         />
       </Viewport>
     );
@@ -71,5 +83,5 @@ export default function WrappedPlayerPage({ params }: { readonly params: Promise
     return <StoryLoading done={!loading && Boolean(story)} />;
   }
 
-  return <StoryPlayer story={story} onClose={() => router.push("/")} />;
+  return <StoryPlayer story={story} onClose={() => router.push(storyPlayerClosePath())} />;
 }
