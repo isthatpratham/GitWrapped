@@ -113,7 +113,7 @@ services/
   story/        Story Intelligence, copy, composition
 lib/player/     Navigation, progress, share, errors
 domain/models/  Canonical types
-docs/           PRD, architecture, design, motion, storyboard
+docs/           Product, architecture, data contracts, SDK, analytics, story, player
 ```
 
 | Concern | Lives in |
@@ -168,6 +168,8 @@ Dark mode only. Montserrat only. Motion with purpose. Storytelling over charts.
 Respect `prefers-reduced-motion`. Do not invent bounce, spin, or decorative loops in the recap.
 
 More detail: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md), [docs/MOTION_SYSTEM.md](docs/MOTION_SYSTEM.md), [docs/STORYBOARD.md](docs/STORYBOARD.md).
+
+How the recap is built: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DATA_CONTRACTS.md](docs/DATA_CONTRACTS.md), [docs/GITHUB_SDK.md](docs/GITHUB_SDK.md), [docs/ANALYTICS.md](docs/ANALYTICS.md), [docs/STORY_INTELLIGENCE.md](docs/STORY_INTELLIGENCE.md), [docs/STORY_PLAYER.md](docs/STORY_PLAYER.md). Product scope: [docs/PRD.md](docs/PRD.md).
 
 ---
 

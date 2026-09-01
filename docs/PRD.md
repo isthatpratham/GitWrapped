@@ -1,169 +1,117 @@
-# GitWrapped — Product Requirements Document (PRD)
+# GitWrapped — Product Requirements
 
-## Product Overview
+GitWrapped turns public GitHub activity into a year-end story. It is a recap, not a dashboard: one slide at a time, evidence-backed, shareable.
 
-GitWrapped is a premium web application that transforms a developer's public GitHub activity into a beautiful, story-driven annual recap.
-
-Rather than displaying raw analytics through dashboards, GitWrapped presents insights as an immersive narrative experience inspired by modern product storytelling.
+This document describes the product as implemented on `main` (v1.0). Older intent that never shipped is listed as out of scope, not as current features.
 
 ---
 
-# Vision
+## Vision
 
-Every developer has a story.
+Every developer has a story. GitWrapped helps tell it.
 
-GitWrapped helps tell it.
-
----
-
-# Objectives
-
-* Build a beautiful GitHub yearly recap experience.
-* Prioritize storytelling over analytics.
-* Deliver a polished, premium interface.
-* Keep the experience shareable.
-* Build an extensible architecture for future developer platforms.
+If a feature does not improve the story, it does not belong here.
 
 ---
 
-# Target Audience
+## What exists today
 
-* Software Engineers
-* Students
-* Open Source Contributors
-* Freelancers
-* Technical Content Creators
+- Public username on the landing page. No account.
+- Server-side pipeline: GitHub GraphQL → validated data → analytics → Story Intelligence → Story Player.
+- Recap year is the **current UTC calendar year**.
+- Dynamic deck: Welcome, ranked body slides, Closing. Length follows evidence (cap 15).
+- Full-screen player: chapters, autoplay, keyboard, wheel, swipe, replay, share link, SVG card.
+- Unavailable data stays unavailable. Zero contributions is a valid measured year.
 
----
-
-# Success Criteria
-
-* Fast loading
-* Mobile-first
-* Shareable recap
-* Smooth animations
-* High Lighthouse score
-* Maintainable architecture
+Try `/wrapped/<github-login>` after `npm run dev`.
 
 ---
 
-# MVP Scope
+## User journey
 
-## Landing
-
-* Hero
-* Username input
-* Demo preview
-* Features
-* Footer
-
-## Wrapped Experience
-
-* Welcome
-* Year overview
-* Contributions
-* Longest streak
-* Most productive day
-* Favorite repository
-* Language breakdown
-* Coding habits
-* Achievements
-* Final recap
-
-## Sharing
-
-* Replay
-* Share link
-* Download image
-
----
-
-# Out of Scope (V1)
-
-* User accounts
-* Database
-* Payments
-* Teams
-* Multi-user comparisons
-* AI-generated insights
-* Private repository analysis
-* Multiple developer platforms
-
----
-
-# User Journey
-
-Landing
+Landing (`/`)
 
 ↓
 
-Enter GitHub username
+Enter a GitHub username (“Begin Your Story”)
 
 ↓
 
-Fetch GitHub data
+`/wrapped/<username>` loading copy
 
 ↓
 
-Generate analytics
+Server action `getWrappedStoryDeck`
 
 ↓
 
-Generate story
+Story Player (splash → slides → share)
 
 ↓
 
-View recap
+Share, download card, or “Run It Back”
 
-↓
-
-Share recap
+Close returns to `/`.
 
 ---
 
-# Functional Requirements
+## Functional requirements (current)
 
 The application must:
 
-* Accept any public GitHub username.
-* Validate the username.
-* Fetch public GitHub data.
-* Calculate yearly insights.
-* Present insights as full-screen story slides.
-* Allow replay.
-* Allow sharing.
+- Accept a public GitHub username and reject invalid logins before calling GitHub.
+- Fetch public activity for the recap year.
+- Compute insights with explicit availability.
+- Compose a story from available insights only.
+- Play the story full-screen with progress, pause, close, replay, and share.
+- Surface recap errors as stable codes (`USER_NOT_FOUND`, `RATE_LIMIT`, …), not raw API errors.
 
 ---
 
-# Non-Functional Requirements
+## Non-functional
 
-* Responsive
-* Accessible
-* Fast
-* Dark mode only
-* Keyboard navigation
-* Mobile gestures
-* SEO friendly
-* Type-safe
-* Modular
+- Dark mode only
+- Montserrat only (monospace allowed for code-like strings)
+- TypeScript, Zod on GitHub responses
+- UTC for all time analytics
+- Keyboard and touch navigation
+- `prefers-reduced-motion` on slide transitions
+- Token stays server-side (`GITHUB_TOKEN`)
 
 ---
 
-# Future Roadmap
+## Out of scope
 
-* GitHub OAuth
-* Private repository support
-* Multi-year comparisons
-* LeetCode integration
-* WakaTime integration
-* Codeforces integration
-* Developer achievements
-* Personalized recap URLs
-* Export to PDF
-* Animated video export
+Not built, even if routes or constants mention them:
+
+- User accounts, OAuth, database, payments
+- Private repositories
+- Multi-year comparison picker
+- Teams / comparisons between users
+- AI-generated insights
+- LeetCode, WakaTime, Codeforces, Dev.to
+- PDF or video export
+- Demo preview, marketing feature grid, or footer on the landing page (the landing is username + headline only)
+
+`ROUTES.LOGIN`, `CALLBACK`, `DASHBOARD` and `/api/wrapped` are placeholders, not product surfaces.
 
 ---
 
-# Guiding Principle
+## Success (how we judge this version)
 
-If a feature does not improve the story, it does not belong in GitWrapped.
+- The recap matches public GitHub data we actually fetched.
+- Two developers with different years get different slides when the evidence differs.
+- Peak-day repository and most-starred repository stay independent.
+- Missing timestamps do not become a fake “most active hour.”
+- Share works via native share or clipboard; the URL is `/wrapped/<handle>`.
+
+---
+
+## Future (not in this release)
+
+- GitHub OAuth and private recaps
+- Multi-year comparisons
+- Other developer platforms
+- Animated video export
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for how the current system is layered.

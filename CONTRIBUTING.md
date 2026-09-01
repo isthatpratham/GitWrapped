@@ -46,6 +46,8 @@ Keep the pipeline intact:
 GitHub → validated data → analytics → Story Intelligence → Story Player
 ```
 
+Layer details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DATA_CONTRACTS.md](docs/DATA_CONTRACTS.md), [docs/GITHUB_SDK.md](docs/GITHUB_SDK.md), [docs/ANALYTICS.md](docs/ANALYTICS.md), [docs/STORY_INTELLIGENCE.md](docs/STORY_INTELLIGENCE.md), [docs/STORY_PLAYER.md](docs/STORY_PLAYER.md).
+
 | Layer | May | Must not |
 | --- | --- | --- |
 | `sdk/github/` | Fetch, validate, normalize | Invent insights or copy |
