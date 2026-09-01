@@ -1,648 +1,116 @@
 # GitWrapped Storyboard
 
-## Story Philosophy
+GitWrapped is not a dashboard. It is a story.
 
-GitWrapped is not a dashboard.
+This file is **voice and structure**, not a fixed 14-slide script. Which slides appear is decided by Story Intelligence from real evidence. See [STORY_INTELLIGENCE.md](./STORY_INTELLIGENCE.md).
 
-It is not a report.
+---
 
-It is a story.
+## Philosophy
 
-Every slide should reveal one meaningful insight, build curiosity for the next, and leave the user feeling proud of the work they put in throughout the year.
-
-The experience should feel personal, immersive, and memorable.
+Every slide should reveal one meaningful thing, make the next one worth waiting for, and stay honest about what GitHub actually provided.
 
 The interface should never compete with the story.
 
 ---
 
-# Story Structure
+## Experience rules
 
-Opening
-
-↓
-
-Curiosity
-
-↓
-
-Identity
-
-↓
-
-Growth
-
-↓
-
-Achievements
-
-↓
-
-Reflection
-
-↓
-
-Closing
+- One hero idea per slide
+- Numbers support the line; they are not the slide
+- Do not pad a thin year with weak slides
+- Measured zero is allowed; missing data is not shown as zero
+- Peak-day repository and most-starred repository are different stories
+- Time insights say UTC when they depend on timestamps
 
 ---
 
-# Experience Rules
+## Emotional shape
 
-* One hero metric per slide.
-* One clear message per slide.
-* Never overload the screen.
-* Every transition should feel intentional.
-* The user should never feel rushed.
-* Numbers support the story, they do not become the story.
+Curiosity → recognition → surprise → pride → reflection → close.
 
----
+Chapters in the player:
 
-# Slide 00
+Opening → Your Year → Your Rhythm → Your Build → Milestones → Reflection → Finale
 
-## Splash
-
-Purpose
-
-Create anticipation.
-
-Content
-
-GitWrapped
-
-2026
-
-Small subtitle
-
-**Your year in code. Beautifully wrapped.**
-
-Motion
-
-Slow fade in.
-
-Duration
-
-2 seconds.
+A given recap may skip chapters that have no slides.
 
 ---
 
-# Slide 01
+## Always present
 
-## Welcome
+**Splash** (player index `-1`)  
+GitWrapped. Anticipation. Then the first slide.
 
-Purpose
+**Welcome**  
+Headline: `Hey, {{name}}.`  
+Subtext: rewind this year. Copy states that the recap is public GitHub activity we could measure.
 
-Introduce the developer.
-
-Headline
-
-**Hey, {{name}}.**
-
-Subtext
-
-**Let's rewind your year.**
-
-Supporting Text
-
-Everything you built.
-Every late night.
-Every little win.
-
-It's all here.
-
-Hero
-
-Avatar
-
-Motion
-
-Hero reveal.
+**Closing**  
+Headline: `That's your {{year}} in public GitHub activity.`  
+Then share / “Run It Back”.
 
 ---
 
-# Slide 02
+## Candidate moments (not a guaranteed sequence)
 
-## The Big Picture
+These titles match `services/story/copy/templates.ts`. Any of them can be absent.
 
-Purpose
+| Slide title | What it is about |
+| --- | --- |
+| The Big Picture | Year contribution total (including a measured 0) |
+| Peak Mode | Biggest contribution-calendar day |
+| Peak Day Repository | Repo with the most attributed commits/PRs/issues on that UTC day |
+| Most Starred | Highest star count among the user’s public repos |
+| Consistency | Longest streak |
+| Night Owl | Late UTC commit timestamps |
+| Weekend Rhythm | Weekend share of timed commits |
+| Your Language | Dominant GitHub language bytes |
+| Language Shift | Primary language change vs earlier repos |
+| Main Character Project | Repo concentration of recorded commits |
+| Momentum | Later months vs the start of the year |
+| The Comeback | Quiet stretch then a rebound week |
+| The Final Push | Last 21 days of the UTC year |
+| Milestone | Crossing 100 / 500 / 1000 / … contributions |
+| First Repository | Earliest repo created this year |
+| Open Source | Activity on repos the user does not own |
+| Commit Voice | Word patterns in commit headlines (not full messages) |
+| Activity Spike | One day far above a typical active day |
+| Your Rhythm | One classified rhythm (Night Builder, Specialist, …) |
+| Milestones | Up to four evidence-backed story achievements |
+| Collaborations | Public organization memberships |
 
-Set the stage.
-
-Headline
-
-**Here's the bigger picture.**
-
-Hero Metric
-
-Total Contributions
-
-Supporting Text
-
-You didn't just write code.
-
-You kept showing up.
-
-Motion
-
-Counter reveal.
-
----
-
-# Slide 03
-
-## Consistency
-
-Purpose
-
-Celebrate discipline.
-
-Headline
-
-**You stayed in the game.**
-
-Hero Metric
-
-Longest Streak
-
-Supporting Text
-
-Progress isn't loud.
-
-It's consistent.
-
-Motion
-
-Timeline reveal.
+Do not add a heatmap slide, a “by the numbers” dump, or a fake global rank. Those are not in the intelligence pipeline.
 
 ---
 
-# Slide 04
+## Tone
 
-## Peak Mode
+Sound: calm, specific, a little proud. Not corporate, not cringe, not fake-hype.
 
-Purpose
+Prefer: built, shipped, streak, peak, rhythm, wrapped.
 
-Show productivity.
+Avoid in **copy**: dashboard, analytics, generate, processing, AI, submit.
 
-Headline
-
-**When you locked in... you really locked in.**
-
-Hero Metric
-
-Most Productive Day
-
-Supporting Text
-
-One day stood above the rest.
-
-Motion
-
-Calendar highlight.
+The loading screen is allowed to say “finding” / “looking back” because the player is waiting on a server action. Do not put “Analyzing your data…” on a story slide.
 
 ---
 
-# Slide 05
+## Words on buttons (actual UI)
 
-## Night Owl
+| Instead of | Use |
+| --- | --- |
+| Generate Wrapped | Begin Your Story |
+| View dashboard | (there isn’t one) |
+| Replay | Run It Back |
+| Share | Share Your Story / Share |
 
-Purpose
-
-Reveal working habits.
-
-Headline
-
-**The night knew your name.**
-
-Hero Metric
-
-Most Active Hour
-
-Supporting Text
-
-Most people were asleep.
-
-You were shipping.
-
-Motion
-
-Clock reveal.
+Do not invent slogans that are not in the templates.
 
 ---
 
-# Slide 06
+## Final rule
 
-## Your Language
+If a slide would need a chart legend to make sense, it is the wrong slide.
 
-Purpose
-
-Show identity.
-
-Headline
-
-**One language became home.**
-
-Hero Metric
-
-Favorite Language
-
-Supporting Text
-
-Some tools become second nature.
-
-Motion
-
-Language transition.
-
----
-
-# Slide 07
-
-## Main Character Project
-
-Purpose
-
-Highlight repository.
-
-Headline
-
-**One repo stole the spotlight.**
-
-Hero Metric
-
-Most Active Repository
-
-Supporting Text
-
-Every year has that one project.
-
-This was yours.
-
-Motion
-
-Repository card reveal.
-
----
-
-# Slide 08
-
-## Momentum
-
-Purpose
-
-Growth.
-
-Headline
-
-**You didn't stay the same.**
-
-Hero Metric
-
-Monthly Growth
-
-Supporting Text
-
-Every commit pushed the story forward.
-
-Motion
-
-Graph reveal.
-
----
-
-# Slide 09
-
-## Your Rhythm
-
-Purpose
-
-Reveal contribution patterns.
-
-Headline
-
-**This was your rhythm.**
-
-Hero Metric
-
-Contribution Heatmap
-
-Supporting Text
-
-Every square tells part of the story.
-
-Motion
-
-Heatmap animation.
-
----
-
-# Slide 10
-
-## Achievements
-
-Purpose
-
-Celebrate.
-
-Headline
-
-**You unlocked a few things along the way.**
-
-Hero
-
-Achievement Cards
-
-Examples
-
-Night Owl
-
-Weekend Warrior
-
-Consistency Champion
-
-Open Source Explorer
-
-Language Hopper
-
-Motion
-
-Sequential reveal.
-
----
-
-# Slide 11
-
-## By The Numbers
-
-Purpose
-
-Quick recap.
-
-Show
-
-Repositories
-
-Stars
-
-Pull Requests
-
-Issues
-
-Languages
-
-Forks
-
-Keep numbers secondary.
-
-The layout should remain minimal.
-
-Motion
-
-Staggered appearance.
-
----
-
-# Slide 12
-
-## The Reflection
-
-Purpose
-
-Slow the pace.
-
-Headline
-
-**This year changed more than your GitHub profile.**
-
-Supporting Text
-
-Every repository started as an idea.
-
-Every commit moved it forward.
-
-Every line taught you something.
-
-Motion
-
-Slow fade.
-
----
-
-# Slide 13
-
-## Finale
-
-Purpose
-
-Leave a lasting impression.
-
-Headline
-
-**Not bad.**
-
-Pause.
-
-Then continue.
-
-**Now imagine what next year looks like.**
-
-Supporting Text
-
-See you in GitWrapped 2027.
-
-CTA
-
-Share Your Story
-
-Replay
-
-Motion
-
-Slow cinematic fade.
-
----
-
-# Tone Guide
-
-GitWrapped should sound:
-
-Confident
-
-Calm
-
-Modern
-
-Minimal
-
-Reflective
-
-Encouraging
-
-Never:
-
-Corporate
-
-Cringey
-
-Overly motivational
-
-Cheesy
-
-Forced Gen Z
-
-Clickbait
-
-Overly emotional
-
----
-
-# Words We Like
-
-Built
-
-Created
-
-Shipped
-
-Progress
-
-Momentum
-
-Story
-
-Journey
-
-Rhythm
-
-Locked In
-
-Level Up
-
-Milestone
-
-Peak
-
-Craft
-
-Wrapped
-
-Next Chapter
-
-Momentum
-
----
-
-# Words We Avoid
-
-Analytics
-
-Statistics
-
-Dashboard
-
-Generate
-
-Processing
-
-Loading
-
-AI
-
-Insights
-
-Data Analysis
-
-Metrics
-
-Results
-
-Submit
-
-Analyze
-
----
-
-# CTA Language
-
-Instead of:
-
-Generate Wrapped
-
-Use:
-
-Begin Your Story
-
-Instead of:
-
-Analyze GitHub
-
-Use:
-
-See Your Year
-
-Instead of:
-
-View Dashboard
-
-Use:
-
-Take Me There
-
-Instead of:
-
-Next
-
-Use:
-
-Keep Going
-
-Instead of:
-
-Replay
-
-Use:
-
-Run It Back
-
-Instead of:
-
-Finish
-
-Use:
-
-That's A Wrap
-
----
-
-# Emotional Journey
-
-Curiosity
-
-↓
-
-Recognition
-
-↓
-
-Surprise
-
-↓
-
-Pride
-
-↓
-
-Reflection
-
-↓
-
-Excitement
-
-The user should finish feeling motivated to build even more next year.
-
----
-
-# Final Principle
-
-If a slide feels like it belongs in an analytics dashboard, redesign it.
-
-If a slide feels like it belongs in a story, keep it.
+If the year does not support a moment, skip it. That is the product working.

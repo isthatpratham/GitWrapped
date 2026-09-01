@@ -1,269 +1,127 @@
 # GitWrapped Architecture
 
-# Architecture Overview
+Layers stay separate. The UI never talks to GitHub and never computes analytics.
 
-GitWrapped follows a layered architecture.
+```
+Landing / Story Player
+        ↓
+app/actions/wrapped.ts   (server action)
+        ↓
+sdk/github               fetch, Zod, domain mapping
+        ↓
+services/analytics       insights + availability
+        ↓
+services/story           Story Intelligence → Story
+        ↓
+components/player        presentation only
+```
 
-GitHub API
-
-↓
-
-GitHub Service
-
-↓
-
-Analytics Engine
-
-↓
-
-Story Engine
-
-↓
-
-Presentation Layer
+Related: [GITHUB_SDK.md](./GITHUB_SDK.md), [DATA_CONTRACTS.md](./DATA_CONTRACTS.md), [ANALYTICS.md](./ANALYTICS.md), [STORY_INTELLIGENCE.md](./STORY_INTELLIGENCE.md), [STORY_PLAYER.md](./STORY_PLAYER.md).
 
 ---
 
-# Layers
+## Layers
 
-## GitHub Service
+### GitHub SDK (`sdk/github/`)
 
-Responsible for:
+GraphQL client, env, errors, queries, Zod schemas, mappers, services.
 
-* GraphQL client
-* Authentication
-* Fetching raw GitHub data
-* Error handling
-* Rate limits
+- Authenticates with server-only `GITHUB_TOKEN`
+- Returns `GitHubAnnualData` plus per-source fetch status
+- No story copy, no ranking
 
-No business logic.
+### Analytics Engine (`services/analytics/`)
 
----
+Pure functions over domain models.
 
-## Analytics Engine
+- Streaks, languages, repos, activity, external contributions, timeline
+- Attaches `availability` so later layers know what is measured vs missing
+- No GitHub calls, no React
 
-Transforms raw GitHub data into insights.
+### Story Intelligence (`services/story/`)
 
-Examples
+`generate → rank → redundancy → select → compose`.
 
-* Longest streak
-* Best coding day
-* Favorite language
-* Coding hours
-* Repository statistics
-* Weekly activity
-* Monthly trends
+- Input: `AnalyticsResult`
+- Output: `Story` (slides, chapters, rhythm, sharing metadata)
+- Copy comes from templates fed by insight payloads
 
-Returns structured analytics only.
+The original `STORY_REGISTRY` still exists in the repo. `compileStoryDeck` uses `composeStory`, not the registry.
 
----
+### Presentation
 
-## Story Engine
-
-Transforms analytics into story slides.
-
-Input
-
-Analytics
-
-Output
-
-Story objects
-
-Example
-
-Longest streak
-
-↓
-
-"You stayed consistent for 84 days."
+- `app/page.tsx` — landing
+- `app/(wrapped)/wrapped/[id]/page.tsx` — load, errors, loading, player
+- `components/player/` — Story Player
+- `lib/player/` — navigation, progress, share, motion, error copy
+- `components/ui/` — primitives (`StoryFrame`, buttons, typography, …)
 
 ---
 
-## UI Layer
+## Folder map (what is actually used)
 
-Responsible only for presentation.
+| Path | Role |
+| --- | --- |
+| `app/` | Routes, layout, SEO/manifest, server action |
+| `components/` | UI, motion wrappers, Story Player |
+| `sdk/github/` | GitHub integration |
+| `services/analytics/` | Insights |
+| `services/story/` | Story Intelligence and copy |
+| `lib/player/` | Player contracts |
+| `lib/time/` | UTC helpers |
+| `domain/models/` | Canonical types (availability, user, repo, …) |
+| `tokens/` | Spacing, radius, z-index, duration (TypeScript) |
+| `config/site.ts` | Public site URL and SEO strings |
+| `constants/` | Routes, extra motion variants |
+| `docs/` | Product and system docs |
 
-Never performs analytics.
-
-Never performs API requests.
-
----
-
-# Folder Responsibilities
-
-app/
-
-Routing.
-
-components/
-
-Reusable UI.
-
-features/
-
-Feature-specific modules.
-
-services/github/
-
-GitHub communication.
-
-services/analytics/
-
-Insight generation.
-
-services/story/
-
-Story generation.
-
-hooks/
-
-Reusable hooks.
-
-types/
-
-Shared TypeScript types.
-
-lib/
-
-Shared utilities.
-
-config/
-
-Application configuration.
-
-constants/
-
-Application constants.
-
-styles/
-
-Global styling.
+Placeholder folders (`features/`, `hooks/`, `providers/` gitkeeps, `app/(auth)/`, `app/(dashboard)/`) are not part of the live recap path.
 
 ---
 
-# Data Flow
+## Request flow
 
-GitHub
+1. User submits a login on `/`.
+2. Client navigates to `/wrapped/<login>`.
+3. `getWrappedStoryDeck` runs on the server.
+4. SDK fetches and validates.
+5. Mappers produce domain models.
+6. `generateRecapAnalytics` → `generateStoryDeck`.
+7. Action returns `{ ok: true, story }` or `{ ok: false, code }`.
+8. Player unwraps and renders. Errors map to `lib/player/errors.ts`.
 
-↓
-
-Raw Data
-
-↓
-
-Validation
-
-↓
-
-Analytics
-
-↓
-
-Story
-
-↓
-
-Slides
+This shape exists so Next.js production does not strip thrown error messages.
 
 ---
 
-# Error Handling
+## Error handling
 
-Every layer handles its own failures.
+Each layer uses typed errors. The UI only sees recap codes (`INVALID_USERNAME`, `USER_NOT_FOUND`, `RATE_LIMIT`, `AUTH_FAILED`, `MALFORMED_RESPONSE`, `FETCH_FAILED`).
 
-Never expose raw API errors to the UI.
-
----
-
-# API Reference
-
-## External Services
-
-GitHub GraphQL API
-
-Primary data source.
-
-GitHub REST API
-
-Fallback for endpoints unavailable in GraphQL.
+Never log or display the PAT, request `Authorization` headers, or raw GraphQL error dumps in the player.
 
 ---
 
-## Environment Variables
+## Environment
 
-GITHUB_TOKEN
+| Variable | Layer |
+| --- | --- |
+| `GITHUB_TOKEN` | SDK, server only |
+| `NEXT_PUBLIC_GITHUB_GRAPHQL` | Optional GraphQL URL |
+| `NEXT_PUBLIC_APP_URL` | Canonical site URL / OG |
 
-GitHub Personal Access Token.
-
-NEXT_PUBLIC_APP_URL
-
-Application URL.
-
-NEXT_PUBLIC_GITHUB_GRAPHQL
-
-GraphQL endpoint.
+There is no client-side GitHub token.
 
 ---
 
-## Initial Data Required
+## External APIs
 
-User
+GitHub GraphQL is the data source. REST is named in SDK config and unused by the live client.
 
-* login
-* name
-* avatar
-* bio
-
-Repositories
-
-* stars
-* forks
-* language
-* creation date
-
-Contributions
-
-* yearly calendar
-* daily totals
-* streak data
-
-Languages
-
-* repository language usage
-
-Commits
-
-* commit dates
-* commit times
-
-Pull Requests
-
-Issues
-
-Organizations
+No second provider is wired. Adding LeetCode or WakaTime would be a new SDK + analytics input, not a Story Player change.
 
 ---
 
-# API Rules
+## Tests
 
-* Use GraphQL wherever possible.
-* Minimize requests.
-* Cache responses.
-* Validate all responses with Zod.
-* Never expose tokens to the client.
-
----
-
-# Future Architecture
-
-Additional providers can be added without changing the Story Engine.
-
-Examples
-
-* LeetCode
-* WakaTime
-* Codeforces
-* Dev.to
-
-Each provider should implement its own service while exposing a common analytics contract.
+Colocated `*.test.ts` (Vitest). Coverage that should stay: availability, peak-day attribution, analytics calculators, insight generate/rank/redundancy, player navigation/progress/close/share/loading.

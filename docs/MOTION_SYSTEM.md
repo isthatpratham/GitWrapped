@@ -1,353 +1,104 @@
 # GitWrapped Motion System
 
-## Philosophy
+Motion should guide attention and mark a change of slide or chapter. It should not decorate empty space.
 
-Motion is storytelling.
-
-Animations exist to guide attention, reinforce hierarchy, and communicate transitions.
-
-Motion should never exist purely for decoration.
-
-Every animation should feel intentional, premium, calm, and effortless.
-
-If an animation attracts more attention than the content itself, it should be redesigned.
+Player motion: `lib/player/motion.ts`. Shared landing variants: `constants/motion.ts`, `components/motion/`.
 
 ---
 
-# Motion Principles
+## Personality
 
-Every animation should satisfy at least one purpose.
+Calm. Short. Editorial.
 
-* Direct attention
-* Explain change
-* Indicate hierarchy
-* Reinforce continuity
-* Reward interaction
-
-Never animate simply because something appeared.
+Not: bounce, spin, flip, shake, confetti, infinite float, elastic overshoot.
 
 ---
 
-# Motion Personality
+## Durations in code
 
-GitWrapped should feel:
+| Token | ms | Where |
+| --- | --- | --- |
+| Fast | 200 | `tokens.duration.fast` |
+| Standard | 300 | `tokens.duration.standard` |
+| Slow / slide | 500 | Slide transition (`SLIDE_TRANSITION_MS`) |
+| Cinematic | 700 | `tokens.duration.cinematic` |
+| Reduced slide | 150 | `REDUCED_TRANSITION_MS` |
+| Autoplay | 6000 | Each story slide |
+| Nav lock | 500 | Ignore stacked gestures |
+| Loading line | 1400 | `StoryLoading` copy cycle |
+| Ready hold | 400 | After “Your story is ready.” |
 
-* Calm
-* Cinematic
-* Editorial
-* Elegant
-* Smooth
-* Confident
-
-Never:
-
-* Playful
-* Bouncy
-* Hyperactive
-* Cartoon-like
-* Gamified
+Do not add animations longer than ~900ms unless a specific story beat needs it. Autoplay duration is a hold, not an animation length.
 
 ---
 
-# Animation Duration
+## Easing
 
-Instant
+Default product curve: `[0.16, 1, 0.3, 1]` (`constants/motion.ts` / `tokens.easing.easeOut`).
 
-100ms
-
-Fast
-
-200ms
-
-Standard
-
-300ms
-
-Slow
-
-500ms
-
-Cinematic
-
-700ms
-
-Maximum
-
-900ms
-
-No animation should exceed 1000ms unless explicitly required for storytelling.
+Landing uses that curve at 0.8s for the opening fade/blur. Player slide transitions use Framer Motion with the durations above.
 
 ---
 
-# Easing
+## Allowed
 
-Default
+- Fade, fade-up, opacity
+- Small translate (player: 12px in, 8px out)
+- Scale used sparingly (share card, landing)
+- Blur on landing reveal only (`BlurReveal`)
+- Number counting (`Counter`) once
+- Progress fill that moves continuously, never jumps backward except on replay
 
-easeOut
+## Forbidden
 
-Entrance
-
-easeOut
-
-Exit
-
-easeIn
-
-Shared Layout
-
-easeInOut
-
-Avoid exaggerated easing curves.
-
-Motion should feel natural.
+Bounce, spin, flip, flash, confetti, looping particle backgrounds, layout-thrashing animations.
 
 ---
 
-# Spring Presets
+## Story slides
 
-Small Elements
+Each slide: enter → hold (autoplay or pause) → exit.
 
-Stiff
+Chapter changes can show a short chapter cue (`chapterChanged` in `lib/player/motion.ts`).
 
-Medium damping
-
-Cards
-
-Medium stiffness
-
-High damping
-
-Full Screen Transitions
-
-Low stiffness
-
-High damping
-
-Interactive Elements
-
-Responsive
-
-Never elastic.
+Full-screen transition (default): opacity + slight Y. Reduced motion: opacity only.
 
 ---
 
-# Allowed Animations
+## Navigation motion
 
-* Fade
-* Fade Up
-* Fade Down
-* Opacity
-* Scale
-* Blur In
-* Blur Out
-* Slide
-* Cross Fade
-* Shared Layout
-* Number Counting
-* Progress Fill
-* Chart Drawing
+Keyboard, wheel, swipe, and side taps all go through the same index helpers. The 500ms lock is the anti-skip rule, not a visual spring.
+
+Hover on buttons: small, not bouncy. Focus: ring/outline (`--color-focus` / `--color-ring`).
 
 ---
 
-# Forbidden Animations
+## Progress
 
-* Bounce
-* Spin
-* Flip
-* Shake
-* Rubber Band
-* Flash
-* Confetti
-* Infinite Floating
-* Random Rotation
-* Overshoot
+Segments fill left to right. Past segments stay full. Do not animate the bar with bounce. Do not size segments by chapter weight — equal width per slide.
 
 ---
 
-# Page Transitions
+## Accessibility
 
-Every full-screen slide transition should:
+`useReducedMotion()` in the Story Player.
 
-Fade
+When reduced motion is on:
 
-*
+- No Y/scale slide travel
+- 150ms fades
+- Still show loading copy changes (they are text, not motion)
 
-Subtle upward movement
-
-*
-
-Small opacity interpolation
-
-Duration:
-
-500ms
+Do not ship a recap that is unusable with motion off.
 
 ---
 
-# Story Slides
+## Performance
 
-Each slide should have:
-
-Entrance
-
-Pause
-
-Exit
-
-The user should never feel rushed.
+Prefer `transform` and `opacity`. Avoid animating layout. Progress uses width/fill of existing segments rather than remounting the story.
 
 ---
 
-# Navigation
+## Final rule
 
-Keyboard
-
-Arrow Keys
-
-Space
-
-Enter
-
-Mouse Wheel
-
-Touch
-
-Swipe
-
-Trackpad
-
-Smooth snapping
-
----
-
-# Hover Motion
-
-Hover effects should be subtle.
-
-Maximum scale
-
-1.02
-
-Maximum translation
-
-2px
-
-Never animate more than one property aggressively.
-
----
-
-# Button Motion
-
-Hover
-
-Small lift
-
-Tap
-
-Small compression
-
-Focus
-
-Glow or outline
-
-No bounce.
-
----
-
-# Chart Animation
-
-Charts should animate once.
-
-Never loop.
-
-Lines should draw progressively.
-
-Bars should grow from baseline.
-
-Pie charts should rotate minimally.
-
-Numbers should count naturally.
-
----
-
-# Progress Indicators
-
-Progress bars should animate continuously.
-
-Never jump.
-
-Indicators should reinforce progression through the story.
-
----
-
-# Number Animation
-
-Large statistics should animate from zero only once.
-
-Animation should finish before supporting text appears.
-
----
-
-# Blur
-
-Blur should communicate transition.
-
-Never use blur as decoration.
-
-Maximum blur
-
-12px
-
----
-
-# Background Motion
-
-Backgrounds should remain mostly static.
-
-If animated:
-
-Very slow
-
-Low opacity
-
-No distracting particle systems
-
-No infinite floating blobs
-
----
-
-# Accessibility
-
-Respect prefers-reduced-motion.
-
-If reduced motion is enabled:
-
-Disable transitions
-
-Disable parallax
-
-Disable scaling
-
-Use simple fades
-
----
-
-# Performance
-
-Use transform and opacity whenever possible.
-
-Avoid animating layout properties.
-
-Avoid expensive filters.
-
-Avoid unnecessary re-renders.
-
-Prefer GPU-accelerated animations.
-
----
-
-# Final Rule
-
-Motion should feel invisible.
-
-The user should remember the story, not the animation.
+The user should remember the year, not the tween.
